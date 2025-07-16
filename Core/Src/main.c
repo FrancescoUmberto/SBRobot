@@ -27,6 +27,7 @@
 #include <stdio.h>
 #include <stdlib.h>
 #include "stm32f4xx.h"
+#include "headers/encoder.h"
 /* USER CODE END Includes */
 
 /* Private typedef -----------------------------------------------------------*/
@@ -48,6 +49,7 @@
 
 /* USER CODE BEGIN PV */
 uint32_t test = 0;
+encoder_t encoder;
 /* USER CODE END PV */
 
 /* Private function prototypes -----------------------------------------------*/
@@ -96,6 +98,7 @@ int main(void)
   HAL_TIM_Encoder_Start_IT(&htim4, TIM_CHANNEL_ALL);
   __HAL_TIM_ENABLE_IT(&htim4, TIM_IT_UPDATE);
   HAL_TIM_Base_Start_IT(&htim6);
+  encoder.tim = htim4.Instance;
   /* USER CODE END 2 */
 
   /* Infinite loop */
@@ -159,10 +162,8 @@ void SystemClock_Config(void)
 /* USER CODE BEGIN 4 */
 void HAL_TIM_PeriodElapsedCallback(TIM_HandleTypeDef *htim){
 	if (htim->Instance == TIM6){
-		test = htim4.Instance->CNT;
-	}
-	else if (htim->Instance == TIM4){
-		printf("ok \n");
+		update_direction(&encoder);
+		printf("%u \n",(unsigned int)encoder.direction);
 	}
 
 }
@@ -188,8 +189,7 @@ void Error_Handler(void)
   }
   /* USER CODE END Error_Handler_Debug */
 }
-
-#ifdef  USE_FULL_ASSERT
+#ifdef USE_FULL_ASSERT
 /**
   * @brief  Reports the name of the source file and the source line number
   *         where the assert_param error has occurred.
