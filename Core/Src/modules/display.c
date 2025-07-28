@@ -347,10 +347,10 @@ void MAX72_Scroll_Init(const char *text) {
     memset(frame, 0, sizeof(frame));
     MAX72_SendFrame();
 
-    // Inizializza lo stato
+    // Inizializza lo stato - CAMBIATO: inizia dal primo carattere per scorrimento inverso
     scroll_state.text = text;
     scroll_state.text_len = strlen(text);
-    scroll_state.current_char_idx = scroll_state.text_len - 1; // Inizia dall'ultimo carattere
+    scroll_state.current_char_idx = 0; // Inizia dal primo carattere
     scroll_state.current_col = 0;
     scroll_state.spacing_counter = 0;
     scroll_state.padding_counter = 0;
@@ -387,14 +387,15 @@ void MAX72_Scroll_Process(void) {
                          ' ' : scroll_state.text[scroll_state.current_char_idx];
             uint8_t *glyph = LETTERS[ch - ' '].value;
 
-            // Shift di una colonna del carattere corrente
+            // CAMBIATO: Shift verso destra (da destra verso sinistra)
             for (uint8_t row = 0; row < 8; row++) {
-                uint8_t new_bit = (glyph[row] >> (GLYPH_WIDTH - 1 - scroll_state.current_col)) & 0x01;
+                uint8_t new_bit = (glyph[row] >> scroll_state.current_col) & 0x01;
                 uint8_t carry = new_bit;
 
-                for (int d = 0; d < DEV_NUM; d++) {
-                    uint8_t next_carry = (frame[row][d] >> 7) & 0x01;
-                    frame[row][d] = (frame[row][d] << 1) | carry;
+                // CAMBIATO: Shift right invece di left, da device più a destra
+                for (int d = DEV_NUM - 1; d >= 0; d--) {
+                    uint8_t next_carry = frame[row][d] & 0x01;
+                    frame[row][d] = (frame[row][d] >> 1) | (carry << 7);
                     carry = next_carry;
                 }
             }
@@ -412,12 +413,12 @@ void MAX72_Scroll_Process(void) {
 
         case 1: // Spacing tra caratteri
         {
-            // Shift di uno spazio vuoto
+            // CAMBIATO: Shift di uno spazio vuoto verso destra
             for (uint8_t row = 0; row < 8; row++) {
                 uint8_t carry = 0;
-                for (int d = 0; d < DEV_NUM; d++) {
-                    uint8_t next_carry = (frame[row][d] >> 7) & 0x01;
-                    frame[row][d] = (frame[row][d] << 1) | carry;
+                for (int d = DEV_NUM - 1; d >= 0; d--) {
+                    uint8_t next_carry = frame[row][d] & 0x01;
+                    frame[row][d] = (frame[row][d] >> 1) | (carry << 7);
                     carry = next_carry;
                 }
             }
@@ -428,9 +429,9 @@ void MAX72_Scroll_Process(void) {
             if (scroll_state.spacing_counter >= CHAR_SPACING) {
                 scroll_state.spacing_counter = 0;
 
-                // Passa al carattere successivo
-                scroll_state.current_char_idx--;
-                if (scroll_state.current_char_idx < 0) {
+                // CAMBIATO: Passa al carattere successivo (incrementa invece di decrementare)
+                scroll_state.current_char_idx++;
+                if (scroll_state.current_char_idx >= scroll_state.text_len) {
                     // Finiti tutti i caratteri, passa al padding finale
                     scroll_state.state = 2;
                     scroll_state.padding_counter = 0;
@@ -444,12 +445,12 @@ void MAX72_Scroll_Process(void) {
 
         case 2: // Padding finale
         {
-            // Shift di uno spazio vuoto
+            // CAMBIATO: Shift di uno spazio vuoto verso destra
             for (uint8_t row = 0; row < 8; row++) {
                 uint8_t carry = 0;
-                for (int d = 0; d < DEV_NUM; d++) {
-                    uint8_t next_carry = (frame[row][d] >> 7) & 0x01;
-                    frame[row][d] = (frame[row][d] << 1) | carry;
+                for (int d = DEV_NUM - 1; d >= 0; d--) {
+                    uint8_t next_carry = frame[row][d] & 0x01;
+                    frame[row][d] = (frame[row][d] >> 1) | (carry << 7);
                     carry = next_carry;
                 }
             }
@@ -458,8 +459,8 @@ void MAX72_Scroll_Process(void) {
 
             // Finito il padding? (GLYPH_WIDTH + CHAR_SPACING)
             if (scroll_state.padding_counter >= (GLYPH_WIDTH + CHAR_SPACING)) {
-                // Ricomincia dal primo carattere
-                scroll_state.current_char_idx = scroll_state.text_len - 1;
+                // CAMBIATO: Ricomincia dal primo carattere (indice 0)
+                scroll_state.current_char_idx = 0;
                 scroll_state.current_col = 0;
                 scroll_state.spacing_counter = 0;
                 scroll_state.padding_counter = 0;
