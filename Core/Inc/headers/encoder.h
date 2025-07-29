@@ -3,13 +3,14 @@
 
 typedef struct{
 	uint8_t direction;
-	uint32_t displacement;
+	float displacement;
+	uint32_t old_CNT;
+	float speed;
 	TIM_TypeDef *tim;
 } encoder_t;
 
+void encoder_init(encoder_t *encoder, TIM_HandleTypeDef *em_tim, TIM_HandleTypeDef *s_tim);
 
-uint32_t get_speed(); // needs to be defined
+void update_data(encoder_t *encoder);
 
-uint32_t get_displacement();
-
-void update_direction(encoder_t *encoder);
+extern float SAMPLING_PERIOD;

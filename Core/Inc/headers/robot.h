@@ -10,5 +10,9 @@ typedef struct {
 	encoder_t *encoder_r; // AMT10
 	stepper_t *stepper_l;
 	stepper_t *stepper_r;
-	display_t *display; // 1088AS
 } robot_t;
+
+extern encoder_t encoder2;
+extern stepper_t stepper2;
+
+void Robot_init();

@@ -7,7 +7,7 @@ typedef struct dict_t_struct {
 } dict_t;
 
 
-void MAX72_Init(void);
+void MAX72_init(void);
 void MAX72_SendRow(uint8_t row, uint8_t pattern[4]);
 void MAX72_Clear(void);
 
@@ -15,7 +15,8 @@ void Print_Alphabet(void);
 
 void MAX72_PrintChar(char c);
 void MAX72_Print_String(const char *str);
-void MAX72_Print_Number(int num);
+void MAX72_Print_Int(int num);
+void MAX72_Print_Float(float num);
 
 // Senza Interrupt (Bloccante)
 void MAX72_Scroll(const char *text, uint16_t delay_ms);

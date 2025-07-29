@@ -28,8 +28,7 @@
 #include <stdio.h>
 #include <stdlib.h>
 #include "stm32f4xx.h"
-#include "headers/encoder.h"
-#include "headers/display.h"
+#include "headers/robot.h"
 /* USER CODE END Includes */
 
 /* Private typedef -----------------------------------------------------------*/
@@ -50,7 +49,6 @@
 
 /* USER CODE BEGIN PV */
 uint32_t test = 0;
-encoder_t encoder;
 /* USER CODE END PV */
 
 /* Private function prototypes -----------------------------------------------*/
@@ -96,24 +94,30 @@ int main(void)
   MX_TIM4_Init();
   MX_TIM6_Init();
   MX_SPI2_Init();
+  MX_TIM2_Init();
+  MX_TIM7_Init();
   /* USER CODE BEGIN 2 */
+  HAL_TIM_Base_Start_IT(&htim6);						// Display timer (0.1MHz)
+  HAL_TIM_Base_Start_IT(&htim7);						// Encoder timer
   HAL_TIM_Encoder_Start_IT(&htim4, TIM_CHANNEL_ALL);
-  __HAL_TIM_ENABLE_IT(&htim4, TIM_IT_UPDATE);
-  HAL_TIM_Base_Start_IT(&htim6);
-  encoder.tim = htim4.Instance;
-
+  	//  __HAL_TIM_ENABLE_IT(&htim4, TIM_IT_UPDATE);		// Enable update interrupt for timer in encoder mode
   /* USER CODE END 2 */
 
   /* Infinite loop */
   /* USER CODE BEGIN WHILE */
-  MAX72_Init();
-  MAX72_Start_Scrolling("Ciao mondo!");
+  Robot_init();
+  HAL_Delay(1000);
+  printf("We\n");
+  printf("PERIOD %d",(int)(SAMPLING_PERIOD*100));
+//  MAX72_Start_Scrolling("Work in progress...");
   while (1)
   {
+	  printf("A\n");
+	  HAL_Delay(1000);
     /* USER CODE END WHILE */
 
     /* USER CODE BEGIN 3 */
-	  MAX72_Scroll_Process();
+//	  MAX72_Scroll_Process();
   }
   /* USER CODE END 3 */
 }
@@ -168,10 +172,14 @@ void SystemClock_Config(void)
 /* USER CODE BEGIN 4 */
 void HAL_TIM_PeriodElapsedCallback(TIM_HandleTypeDef *htim){
 	if (htim->Instance == TIM6){
-		update_direction(&encoder);
-//		printf("%u \n",(unsigned int)encoder.direction);
-		MAX72_Scroll_Timer_ISR();
+//		MAX72_Scroll_Timer_ISR(); // Scrolling function
+	} else if (htim->Instance == TIM7) {
+		update_data(&encoder2);
+//		MAX72_Print_Float(encoder2.speed);
 	}
+//	else if (htim->Instance == TIM4) {
+//		printf("Revolution completed\n");
+//	}
 
 }
 

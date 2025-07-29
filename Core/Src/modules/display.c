@@ -2,6 +2,7 @@
 #include "headers/display.h"
 #include <stdio.h>
 #include <string.h>
+#include <stdlib.h>
 
 #define CHAR_MAX 95
 
@@ -115,7 +116,7 @@ dict_t LETTERS[CHAR_MAX] =
 };
 
 
-void MAX72_Init(void)
+void MAX72_init(void)
 {
     uint8_t txBuf[8];
     for (uint8_t cmd=0; cmd<5; cmd++) {
@@ -124,9 +125,9 @@ void MAX72_Init(void)
             txBuf[dev*2]   = InitCommands[cmd][0];
             txBuf[dev*2+1] = InitCommands[cmd][1];
         }
-        HAL_GPIO_WritePin(GPIOB, GPIO_PIN_4, GPIO_PIN_RESET);
+        HAL_GPIO_WritePin(GPIOB, GPIO_PIN_4, GPIO_PIN_RESET); // CS
         HAL_SPI_Transmit(&hspi2, txBuf, sizeof(txBuf), HAL_MAX_DELAY);
-        HAL_GPIO_WritePin(GPIOB, GPIO_PIN_4, GPIO_PIN_SET);
+        HAL_GPIO_WritePin(GPIOB, GPIO_PIN_4, GPIO_PIN_SET); // CS
     }
 }
 
@@ -146,15 +147,15 @@ void MAX72_SendRow(uint8_t row, uint8_t pattern[4])
 void Print_Alphabet(void)
 {
     for (uint8_t idx=0; idx<CHAR_MAX; idx++) {
-        for (uint8_t row=1; row<=8; row++) {
+        for (uint8_t row=0; row<=7; row++) {
             // tutti e 4 i moduli mostrano lo stesso carattere
             uint8_t pat[4] = {
-                LETTERS[idx].value[row-1],
-                LETTERS[idx].value[row-1],
-                LETTERS[idx].value[row-1],
-                LETTERS[idx].value[row-1]
+                LETTERS[idx].value[row],
+                LETTERS[idx].value[row],
+                LETTERS[idx].value[row],
+                LETTERS[idx].value[row]
             };
-            MAX72_SendRow(row, pat);
+            MAX72_SendRow(row+1, pat); // rows: 1-8
         }
         HAL_Delay(500);
     }
@@ -174,15 +175,15 @@ void MAX72_PrintChar(char c)
 	// ' ' is 32 and '~' is 126
     if (c < ' ' || c > '~') return; // carattere non valido
     uint8_t idx = c - ' '; // calcola l'indice del carattere
-    for (uint8_t row=1; row<=8; row++) {
+    for (uint8_t row=0; row<=7; row++) {
         // tutti e 4 i moduli mostrano lo stesso carattere
         uint8_t pat[4] = {
-            LETTERS[idx].value[row-1],
-            LETTERS[idx].value[row-1],
-            LETTERS[idx].value[row-1],
-            LETTERS[idx].value[row-1]
+            LETTERS[idx].value[row],
+            LETTERS[idx].value[row],
+            LETTERS[idx].value[row],
+            LETTERS[idx].value[row]
         };
-        MAX72_SendRow(row, pat);
+        MAX72_SendRow(row+1, pat); // rows: 1-8
     }
 }
 
@@ -191,7 +192,7 @@ void MAX72_Print_String(const char *str)
     // str reverse
     // if str length is greater than 4, truncate it
     uint8_t len = strlen(str);
-    char reversed[5] = {0}; // max 4 chars + null terminator
+    char reversed[4] = {}; // max 4 chars
     for (uint8_t i = 0; i < 4 && i < len; i++) {
         reversed[i] = str[len - 1 - i];
     }
@@ -202,25 +203,32 @@ void MAX72_Print_String(const char *str)
     }
 
     // create a pattern and print with SendRow
-    for (uint8_t row=1; row<=8; row++) {
+    for (uint8_t row=0; row<=7; row++) {
         uint8_t pat[4] = {
-            LETTERS[reversed[0] - ' '].value[row-1],
-            LETTERS[reversed[1] - ' '].value[row-1],
-            LETTERS[reversed[2] - ' '].value[row-1],
-            LETTERS[reversed[3] - ' '].value[row-1]
+            LETTERS[reversed[0] - ' '].value[row],
+            LETTERS[reversed[1] - ' '].value[row],
+            LETTERS[reversed[2] - ' '].value[row],
+            LETTERS[reversed[3] - ' '].value[row]
         };
-        MAX72_SendRow(row, pat);
+        MAX72_SendRow(row+1, pat); // rows: 1-8
     }
 }
 
-void MAX72_Print_Number(int num)
+void MAX72_Print_Int(int num)
 {
     char str[5];
     snprintf(str, sizeof(str), "%4d", num); // formatta il numero in 4 caratteri
     MAX72_Print_String(str);
 }
 
+void MAX72_Print_Float(float num) {
+    int int_part = (int)num;
+    int frac_part = abs((int)((num - int_part) * 100));  // due cifre decimale
 
+    char str[5];
+    snprintf(str, sizeof(str), "%d.%02d", int_part, frac_part);
+    MAX72_Print_String(str);
+}
 
 
 
