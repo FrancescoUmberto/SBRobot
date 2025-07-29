@@ -8,6 +8,7 @@
 "./Core/Src/system_stm32f4xx.o"
 "./Core/Src/tim.o"
 "./Core/Src/usart.o"
+"./Core/Src/modules/button.o"
 "./Core/Src/modules/display.o"
 "./Core/Src/modules/encoder.o"
 "./Core/Src/modules/robot.o"

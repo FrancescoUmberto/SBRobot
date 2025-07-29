@@ -6,6 +6,6 @@ stepper_t stepper2;
 
 void Robot_init(){
 	encoder_init(&encoder2,&htim4,&htim7);
-
+	stepper_init(&stepper2, &htim2, &encoder2);
 	MAX72_init();										// Display Init
 }

@@ -1,8 +1,7 @@
-
 #include "imu.h"
-#include "encoder.h"
 #include "stepper.h"
 #include "display.h"
+#include "button.h"
 
 typedef struct {
 	imu_t *imu; // 5060
