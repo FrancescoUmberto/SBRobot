@@ -16,9 +16,11 @@ void on_click(){
 		HAL_GPIO_TogglePin(GPIOC, GPIO_PIN_9);
 
 		if(active){
-			set_speed(&stepper2, 3);
+			set_speed(&stepper_l, 3);
+			set_speed(&stepper_r, 3);
 		} else{
-			set_speed(&stepper2,0);
+			set_speed(&stepper_l, 0);
+			set_speed(&stepper_r, 0);
 		}
 	}
 }

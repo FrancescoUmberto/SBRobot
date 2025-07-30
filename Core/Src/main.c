@@ -96,11 +96,15 @@ int main(void)
   MX_SPI2_Init();
   MX_TIM2_Init();
   MX_TIM7_Init();
+  MX_TIM3_Init();
+  MX_TIM5_Init();
   /* USER CODE BEGIN 2 */
   HAL_TIM_Base_Start_IT(&htim6);						// Display timer (0.1MHz)
-  HAL_TIM_Base_Start_IT(&htim7);						// Encoder timer
-  HAL_TIM_Encoder_Start(&htim4, TIM_CHANNEL_ALL);
-  HAL_TIM_PWM_Start(&htim2,TIM_CHANNEL_2);
+  HAL_TIM_Base_Start_IT(&htim7);						// Timeline
+  HAL_TIM_Encoder_Start(&htim3, TIM_CHANNEL_ALL);		// Encoder right
+  HAL_TIM_Encoder_Start(&htim4, TIM_CHANNEL_ALL);		// Encoder left
+  HAL_TIM_PWM_Start(&htim2,TIM_CHANNEL_2);				// Stepper left
+  HAL_TIM_PWM_Start(&htim5,TIM_CHANNEL_1);				// Stepper right
   /* USER CODE END 2 */
 
   /* Infinite loop */
@@ -170,8 +174,10 @@ void HAL_TIM_PeriodElapsedCallback(TIM_HandleTypeDef *htim){
 	if (htim->Instance == TIM6){
 //		MAX72_Scroll_Timer_ISR(); // Scrolling function
 	} else if (htim->Instance == TIM7) {
-		speed_control(&stepper2);
-		MAX72_Print_Float(encoder2.speed);
+		speed_control(&stepper_l);
+		speed_control(&stepper_r);
+//		MAX72_Print_Float(encoder_l.speed);
+		MAX72_Print_Float(encoder_r.speed);
 	}
 }
 
