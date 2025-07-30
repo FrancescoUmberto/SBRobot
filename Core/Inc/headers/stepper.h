@@ -10,6 +10,7 @@ typedef struct{
 	TIM_TypeDef *tim;
 	float setpoint_speed;
 	encoder_t *encoder;
+	float frequency;
 } stepper_t;
 
 

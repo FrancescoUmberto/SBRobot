@@ -171,7 +171,6 @@ void HAL_TIM_PeriodElapsedCallback(TIM_HandleTypeDef *htim){
 //		MAX72_Scroll_Timer_ISR(); // Scrolling function
 	} else if (htim->Instance == TIM7) {
 		speed_control(&stepper2);
-		update_data(&encoder2);
 		MAX72_Print_Float(encoder2.speed);
 	}
 }

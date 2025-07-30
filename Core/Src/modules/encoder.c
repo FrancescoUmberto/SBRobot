@@ -12,7 +12,7 @@ static void update_direction(encoder_t *encoder){
 
 static void update_displacement(encoder_t *encoder){
 
-	encoder->displacement = ((float)encoder->tim->CNT - 4096) * DCF * WHEEL_RADIUS;
+	encoder->displacement = ((float)encoder->tim->CNT - 4096) * DCF;
 	encoder->tim->CNT = 4096;
 	return;
 }
