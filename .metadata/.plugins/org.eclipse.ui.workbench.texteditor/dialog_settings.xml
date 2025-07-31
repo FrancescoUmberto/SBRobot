@@ -3,6 +3,7 @@
 	<item key="hasShownOverlayPopupBefore" value="true"/>
 	<item key="replaceBarOpen" value="false"/>
 	<list key="searchhistory">
+		<item value="set_speed"/>
 		<item value="LD2"/>
 		<item value="GPIO"/>
 		<item value="Elapsed"/>

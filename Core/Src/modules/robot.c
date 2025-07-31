@@ -10,11 +10,11 @@ stepper_t stepper_l;
 
 void Robot_init(){
 
-	encoder_init(&encoder_r, &htim3, &htim7);
-	stepper_init(&stepper_r, &htim5, TIM_CHANNEL_1, &encoder_r, -1);
+	encoder_init(&encoder_l, &htim3, &htim7, -1);
+	stepper_init(&stepper_l, &htim5, TIM_CHANNEL_1, &encoder_l, GPIOA, GPIO_PIN_4);
 
-	encoder_init(&encoder_l, &htim4, &htim7);
-	stepper_init(&stepper_l, &htim2, TIM_CHANNEL_2, &encoder_l, 1);
+	encoder_init(&encoder_r, &htim4, &htim7, 1);
+	stepper_init(&stepper_r, &htim2, TIM_CHANNEL_2, &encoder_r, GPIOB, GPIO_PIN_0);
 
 
 	MAX72_init();

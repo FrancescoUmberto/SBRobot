@@ -1,30 +1,10 @@
-12:24:41 **** Incremental Build of configuration Debug for project self-balancing-robot ****
+08:18:27 **** Incremental Build of configuration Debug for project self-balancing-robot ****
 make -j7 all 
-arm-none-eabi-gcc "../Core/Src/modules/stepper.c" -mcpu=cortex-m4 -std=gnu11 -g3 -DDEBUG -DUSE_HAL_DRIVER -DSTM32F446xx -c -I../Core/Inc -I../Drivers/STM32F4xx_HAL_Driver/Inc -I../Drivers/STM32F4xx_HAL_Driver/Inc/Legacy -I../Drivers/CMSIS/Device/ST/STM32F4xx/Include -I../Drivers/CMSIS/Include -O0 -ffunction-sections -fdata-sections -Wall -fstack-usage -fcyclomatic-complexity -MMD -MP -MF"Core/Src/modules/stepper.d" -MT"Core/Src/modules/stepper.o" --specs=nano.specs -mfpu=fpv4-sp-d16 -mfloat-abi=hard -mthumb -o "Core/Src/modules/stepper.o"
-../Core/Src/modules/stepper.c: In function 'stepper_init':
-../Core/Src/modules/stepper.c:31:30: warning: assignment discards 'volatile' qualifier from pointer target type [-Wdiscarded-qualifiers]
-   31 |                 stepper->CCR = &stepper->tim->CCR1;
-      |                              ^
-../Core/Src/modules/stepper.c:34:30: warning: assignment discards 'volatile' qualifier from pointer target type [-Wdiscarded-qualifiers]
-   34 |                 stepper->CCR = &stepper->tim->CCR2;
-      |                              ^
-../Core/Src/modules/stepper.c:37:30: warning: assignment discards 'volatile' qualifier from pointer target type [-Wdiscarded-qualifiers]
-   37 |                 stepper->CCR = &stepper->tim->CCR3;
-      |                              ^
-../Core/Src/modules/stepper.c:40:30: warning: assignment discards 'volatile' qualifier from pointer target type [-Wdiscarded-qualifiers]
-   40 |                 stepper->CCR = &stepper->tim->CCR4;
-      |                              ^
-arm-none-eabi-gcc -o "self-balancing-robot.elf" @"objects.list"   -mcpu=cortex-m4 -T"/Users/umbertofrancescocarolini/Desktop/Università/Materiale Magistrale/Embedded Control/SBRobot/STM32F446RETX_FLASH.ld" --specs=nosys.specs -Wl,-Map="self-balancing-robot.map" -Wl,--gc-sections -static --specs=nano.specs -mfpu=fpv4-sp-d16 -mfloat-abi=hard -mthumb -Wl,--start-group -lc -lm -Wl,--end-group
-Finished building target: self-balancing-robot.elf
- 
 arm-none-eabi-size  self-balancing-robot.elf 
-arm-none-eabi-objdump -h -S self-balancing-robot.elf  > "self-balancing-robot.list"
    text	   data	    bss	    dec	    hex	filename
-  23096	    948	   2604	  26648	   6818	self-balancing-robot.elf
+  23336	    948	   2620	  26904	   6918	self-balancing-robot.elf
 Finished building: default.size.stdout
  
-Finished building: self-balancing-robot.list
- 
 
-12:24:41 Build Finished. 0 errors, 4 warnings. (took 890ms)
+08:18:27 Build Finished. 0 errors, 0 warnings. (took 215ms)
 

@@ -1,19 +1,25 @@
 #include "headers/stepper.h"
 #include <stdio.h>
+#include <math.h>
 
 float err = 0;
 
 void speed_control(stepper_t *stepper){
 	update_data(stepper->encoder);
 
-	float e = stepper->setpoint_speed - (-stepper->encoder->speed); // SEGNO INVERTITO
+	float e = stepper->setpoint_speed - stepper->encoder->speed;
 	float delta_f = e / ANGLE_STEP ;
 
 	stepper->frequency += delta_f;
+
+	uint8_t sign = stepper->frequency > 0;
+
+	HAL_GPIO_WritePin(stepper->DIR_PORT, stepper->DIR_PIN, (stepper->encoder->direction_invert > 0 ? sign : !sign));
+
 	err = e;
 
 	// period = (1+ARR)*(1+PSC)/HCLK;
-	stepper->tim->ARR = (1/stepper->frequency)*HCLK-1;
+	stepper->tim->ARR = fabs(1/stepper->frequency)*HCLK-1;
 	*stepper->CCR = (stepper->tim->ARR+1)/2;
 	stepper->tim->EGR = TIM_EGR_UG;
 }
@@ -22,10 +28,12 @@ void set_speed(stepper_t *stepper, float speed){
 	stepper->setpoint_speed = speed;
 }
 
-void stepper_init(stepper_t *stepper, TIM_HandleTypeDef *htim, uint32_t tim_channel, encoder_t *encoder, uint8_t direction_invert){
+void stepper_init(stepper_t *stepper, TIM_HandleTypeDef *htim, uint32_t tim_channel,
+		encoder_t *encoder, uint32_t DIR_PORT, uint16_t DIR_PIN){
 	stepper->angle_step = ANGLE_STEP;
 	stepper->tim = htim->Instance;
-	stepper->direction_invert = direction_invert;
+	stepper->DIR_PORT = DIR_PORT;
+	stepper->DIR_PIN = DIR_PIN;
 	switch (tim_channel){
 	case TIM_CHANNEL_1:
 		stepper->CCR = &stepper->tim->CCR1;

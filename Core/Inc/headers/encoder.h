@@ -8,9 +8,10 @@ typedef struct{
 	float displacement;
 	float speed;
 	TIM_TypeDef *tim;
+	int8_t direction_invert;
 } encoder_t;
 
-void encoder_init(encoder_t *encoder, TIM_HandleTypeDef *em_tim, TIM_HandleTypeDef *s_tim);
+void encoder_init(encoder_t *encoder, TIM_HandleTypeDef *em_tim, TIM_HandleTypeDef *s_tim, int8_t direction_invert);
 
 void update_data(encoder_t *encoder);
 
