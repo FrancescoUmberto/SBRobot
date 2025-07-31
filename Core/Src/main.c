@@ -48,7 +48,6 @@
 /* Private variables ---------------------------------------------------------*/
 
 /* USER CODE BEGIN PV */
-uint32_t test = 0;
 /* USER CODE END PV */
 
 /* Private function prototypes -----------------------------------------------*/
@@ -173,11 +172,11 @@ void SystemClock_Config(void)
 void HAL_TIM_PeriodElapsedCallback(TIM_HandleTypeDef *htim){
 	if (htim->Instance == TIM6){
 //		MAX72_Scroll_Timer_ISR(); // Scrolling function
+		MAX72_Print_Float(encoder_l.speed, 4, 1);
+//		MAX72_Print_Float(encoder_l.speed);
 	} else if (htim->Instance == TIM7) {
 		speed_control(&stepper_r);
 		speed_control(&stepper_l);
-//		MAX72_Print_Float(encoder_l.speed);
-		MAX72_Print_Float(encoder_l.speed);
 	}
 }
 

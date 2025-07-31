@@ -14,9 +14,10 @@ void MAX72_Clear(void);
 void Print_Alphabet(void);
 
 void MAX72_PrintChar(char c);
-void MAX72_Print_String(const char *str);
-void MAX72_Print_Int(int num);
-void MAX72_Print_Float(float num);
+void MAX72_Print_String(const char *str, uint8_t settings);
+//void MAX72_Print_String(const char *str);
+void MAX72_Print_Int(int num, uint8_t minidigits);
+void MAX72_Print_Float(float num, uint8_t decimals, uint8_t minidigits);
 
 // Senza Interrupt (Bloccante)
 void MAX72_Scroll(const char *text, uint16_t delay_ms);
