@@ -114,25 +114,39 @@ int main(void)
   /* USER CODE BEGIN WHILE */
   HAL_Delay(50);
   Robot_init();
-//  MAX72_Start_Scrolling("Work in progress...");
+
+  char str[] = "SBRobot";
+  display_data_t data = {str, PRINT_SCROLL, NO_SETTINGS, DISPLAY_TYPE_STRING, 0};
+  MAX72_Add_Data(&display, &data);
+
+  display_data_t data2 = {&encoder_l.speed, PRINT_FLOAT, MINIDIGITS, DISPLAY_TYPE_FLOAT, 3};
+  MAX72_Add_Data(&display, &data2);
+
+  display_data_t data3 = {&power_module.voltage, PRINT_FLOAT, NO_SETTINGS, DISPLAY_TYPE_FLOAT, 2};
+  MAX72_Add_Data(&display, &data3);
+
   while (1)
   {
     /* USER CODE END WHILE */
 
     /* USER CODE BEGIN 3 */
 	  static uint8_t last_cnt = 255;
-	  if (last_cnt != tim6_update_cnt) {
-	      last_cnt = tim6_update_cnt; // Update every 100ms
+	  if (last_cnt != tim6_update_cnt) { // Update every 100ms
+	      last_cnt = tim6_update_cnt;
+
+	      PowerModule_update_data(&power_module);
 
 	      if (tim6_update_cnt % 5 == 0) { // Update every 500ms
-	          if (tim6_update_cnt % 10 == 0) { // Every 1 second
-	              pm_update_data(&power_module);
-	              MAX72_Print_Float(power_module.voltage, 4, 1);
-	          }
-	      }
-	  }
+	    	  // Display refresh data
+	    	  MAX72_Update_Data(&display);
 
-//	  MAX72_Scroll_Process();
+	    	  if (tim6_update_cnt % 10 == 0) { // Every 1 second
+	    		  MAX72_Change_Data(&display,0);
+	    	  }
+	      }
+
+	      MAX72_Scroll_Process(); // Process scrolling text
+	  }
   }
   /* USER CODE END 3 */
 }
@@ -187,8 +201,6 @@ void SystemClock_Config(void)
 /* USER CODE BEGIN 4 */
 void HAL_TIM_PeriodElapsedCallback(TIM_HandleTypeDef *htim){
 	if (htim->Instance == TIM6){
-//		MAX72_Scroll_Timer_ISR(); // Scrolling function
-//		MAX72_Print_Float(encoder_l.speed, 4, 1);
 		tim6_update_cnt++;
 		if (tim6_update_cnt == 250){
 			tim6_update_cnt = 0;

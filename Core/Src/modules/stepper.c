@@ -8,15 +8,12 @@ float freq = 0;
 static const float constant = 1020*0.05/2;
 
 void speed_control(stepper_t *stepper){
-	update_data(stepper->encoder);
+	Encoder_read(stepper->encoder);
 
 	float e = stepper->setpoint_speed - stepper->encoder->speed;
 //	float delta_f = e / ANGLE_STEP ;
 //
 //	stepper->frequency += delta_f;
-
-	if (stepper->frequency > 1000)
-		stepper->frequency = 1000;
 
 	stepper->frequency += 350*e + constant*(e+err);
 	uint8_t sign = stepper->frequency > 0;
@@ -37,8 +34,8 @@ void set_speed(stepper_t *stepper, float speed){
 	stepper->setpoint_speed = speed;
 }
 
-void stepper_init(stepper_t *stepper, TIM_HandleTypeDef *htim, uint32_t tim_channel,
-		encoder_t *encoder, uint32_t DIR_PORT, uint16_t DIR_PIN){
+void Stepper_init(stepper_t *stepper, TIM_HandleTypeDef *htim, uint32_t tim_channel,
+		encoder_t *encoder, GPIO_TypeDef *DIR_PORT, uint16_t DIR_PIN){
 	stepper->angle_step = ANGLE_STEP;
 	stepper->tim = htim->Instance;
 	stepper->DIR_PORT = DIR_PORT;

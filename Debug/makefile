@@ -11,6 +11,7 @@ RM := rm -rf
 -include sources.mk
 -include Drivers/STM32F4xx_HAL_Driver/Src/subdir.mk
 -include Core/Startup/subdir.mk
+-include Core/Src/modules/display/subdir.mk
 -include Core/Src/modules/subdir.mk
 -include Core/Src/subdir.mk
 -include objects.mk
@@ -61,8 +62,8 @@ all: main-build
 main-build: self-balancing-robot.elf secondary-outputs
 
 # Tool invocations
-self-balancing-robot.elf self-balancing-robot.map: $(OBJS) $(USER_OBJS) /Users/umbertofrancescocarolini/Desktop/Università/Materiale\ Magistrale/Embedded\ Control/SBRobot/STM32F446RETX_FLASH.ld makefile objects.list $(OPTIONAL_TOOL_DEPS)
-	arm-none-eabi-gcc -o "self-balancing-robot.elf" @"objects.list" $(USER_OBJS) $(LIBS) -mcpu=cortex-m4 -T"/Users/umbertofrancescocarolini/Desktop/Università/Materiale Magistrale/Embedded Control/SBRobot/STM32F446RETX_FLASH.ld" --specs=nosys.specs -Wl,-Map="self-balancing-robot.map" -Wl,--gc-sections -static --specs=nano.specs -mfpu=fpv4-sp-d16 -mfloat-abi=hard -mthumb -u _printf_float -Wl,--start-group -lc -lm -Wl,--end-group
+self-balancing-robot.elf self-balancing-robot.map: $(OBJS) $(USER_OBJS) /Users/ivancist/STM32CubeIDE/workspace_1.19.0/SBRobot/SBRobot/STM32F446RETX_FLASH.ld makefile objects.list $(OPTIONAL_TOOL_DEPS)
+	arm-none-eabi-gcc -o "self-balancing-robot.elf" @"objects.list" $(USER_OBJS) $(LIBS) -mcpu=cortex-m4 -T"/Users/ivancist/STM32CubeIDE/workspace_1.19.0/SBRobot/SBRobot/STM32F446RETX_FLASH.ld" --specs=nosys.specs -Wl,-Map="self-balancing-robot.map" -Wl,--gc-sections -static --specs=nano.specs -mfpu=fpv4-sp-d16 -mfloat-abi=hard -mthumb -u _printf_float -Wl,--start-group -lc -lm -Wl,--end-group
 	@echo 'Finished building target: $@'
 	@echo ' '
 

@@ -21,7 +21,7 @@ static void compute_speed(encoder_t *encoder){
 	encoder->speed = encoder->displacement / SAMPLING_PERIOD;
 }
 
-void update_data(encoder_t *encoder){
+void Encoder_read(encoder_t *encoder){
 	update_direction(encoder);
 	update_displacement(encoder);
 	compute_speed(encoder);
@@ -29,7 +29,7 @@ void update_data(encoder_t *encoder){
 }
 
 // em_tim : encoder mode timer | s_tim : sampling timer
-void encoder_init(encoder_t *encoder, TIM_HandleTypeDef *em_tim, TIM_HandleTypeDef *s_tim, int8_t direction_invert){
+void Encoder_init(encoder_t *encoder, TIM_HandleTypeDef *em_tim, TIM_HandleTypeDef *s_tim, int8_t direction_invert){
 	encoder->tim = em_tim->Instance;
 	encoder->tim->CNT = 4096;
 	encoder->direction_invert = direction_invert;
