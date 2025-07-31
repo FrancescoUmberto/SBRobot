@@ -3,16 +3,25 @@
 #include <math.h>
 
 float err = 0;
+float freq = 0;
+
+static const float constant = 1020*0.05/2;
 
 void speed_control(stepper_t *stepper){
 	update_data(stepper->encoder);
 
 	float e = stepper->setpoint_speed - stepper->encoder->speed;
-	float delta_f = e / ANGLE_STEP ;
+//	float delta_f = e / ANGLE_STEP ;
+//
+//	stepper->frequency += delta_f;
 
-	stepper->frequency += delta_f;
+	if (stepper->frequency > 1000)
+		stepper->frequency = 1000;
 
+	stepper->frequency += 350*e + constant*(e+err);
 	uint8_t sign = stepper->frequency > 0;
+
+	freq = stepper->frequency;
 
 	HAL_GPIO_WritePin(stepper->DIR_PORT, stepper->DIR_PIN, (stepper->encoder->direction_invert > 0 ? sign : !sign));
 

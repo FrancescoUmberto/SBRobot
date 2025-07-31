@@ -80,6 +80,8 @@ void Error_Handler(void);
 #define BTN2_EXTI_IRQn EXTI9_5_IRQn
 #define M2_DIR_Pin GPIO_PIN_0
 #define M2_DIR_GPIO_Port GPIOB
+#define BAT_ADC_Pin GPIO_PIN_1
+#define BAT_ADC_GPIO_Port GPIOB
 #define DISP_SCK_Pin GPIO_PIN_10
 #define DISP_SCK_GPIO_Port GPIOB
 #define LED_BTN2_Pin GPIO_PIN_9

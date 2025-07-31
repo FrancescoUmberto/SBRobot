@@ -18,6 +18,7 @@
 /* USER CODE END Header */
 /* Includes ------------------------------------------------------------------*/
 #include "main.h"
+#include "adc.h"
 #include "spi.h"
 #include "tim.h"
 #include "usart.h"
@@ -48,6 +49,7 @@
 /* Private variables ---------------------------------------------------------*/
 
 /* USER CODE BEGIN PV */
+static uint8_t tim6_update_cnt = 0;
 /* USER CODE END PV */
 
 /* Private function prototypes -----------------------------------------------*/
@@ -97,6 +99,7 @@ int main(void)
   MX_TIM7_Init();
   MX_TIM3_Init();
   MX_TIM5_Init();
+  MX_ADC1_Init();
   /* USER CODE BEGIN 2 */
   HAL_TIM_Base_Start_IT(&htim6);						// Display timer (0.1MHz)
   HAL_TIM_Base_Start_IT(&htim7);						// Timeline
@@ -104,6 +107,7 @@ int main(void)
   HAL_TIM_Encoder_Start(&htim4, TIM_CHANNEL_ALL);		// Encoder left
   HAL_TIM_PWM_Start(&htim2,TIM_CHANNEL_2);				// Stepper left
   HAL_TIM_PWM_Start(&htim5,TIM_CHANNEL_1);				// Stepper right
+
   /* USER CODE END 2 */
 
   /* Infinite loop */
@@ -116,6 +120,18 @@ int main(void)
     /* USER CODE END WHILE */
 
     /* USER CODE BEGIN 3 */
+	  static uint8_t last_cnt = 255;
+	  if (last_cnt != tim6_update_cnt) {
+	      last_cnt = tim6_update_cnt; // Update every 100ms
+
+	      if (tim6_update_cnt % 5 == 0) { // Update every 500ms
+	          if (tim6_update_cnt % 10 == 0) { // Every 1 second
+	              pm_update_data(&power_module);
+	              MAX72_Print_Float(power_module.voltage, 4, 1);
+	          }
+	      }
+	  }
+
 //	  MAX72_Scroll_Process();
   }
   /* USER CODE END 3 */
@@ -172,8 +188,11 @@ void SystemClock_Config(void)
 void HAL_TIM_PeriodElapsedCallback(TIM_HandleTypeDef *htim){
 	if (htim->Instance == TIM6){
 //		MAX72_Scroll_Timer_ISR(); // Scrolling function
-		MAX72_Print_Float(encoder_l.speed, 4, 1);
-//		MAX72_Print_Float(encoder_l.speed);
+//		MAX72_Print_Float(encoder_l.speed, 4, 1);
+		tim6_update_cnt++;
+		if (tim6_update_cnt == 250){
+			tim6_update_cnt = 0;
+		}
 	} else if (htim->Instance == TIM7) {
 		speed_control(&stepper_r);
 		speed_control(&stepper_l);
