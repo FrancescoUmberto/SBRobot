@@ -111,6 +111,7 @@ void MAX72_Scroll_Start_IT(const char *text) {
     scroll_state.padding_counter = 0;
     scroll_state.state = 0; // Inizia con il primo carattere
     scroll_state.enabled = 1;
+    scroll_state.updated = 0; // Indica che lo scrolling è stato aggiornato
 
     uint8_t len = strlen(text);
     uint8_t temp = len * GLYPH_WIDTH + (len - 1) * CHAR_SPACING;
@@ -133,6 +134,14 @@ void MAX72_Scroll_Resume(void) {
 // Funzione da chiamare nel main loop - NON bloccante
 void MAX72_Scroll_Process(void) {
     if (!scroll_state.enabled || !scroll_state.text) return;
+
+    if (scroll_state.updated) {
+		// Se il testo è stato aggiornato, ricalcola il frame
+
+    	// TODO RICALCOLO DEL FRAME AGGIORNATO, fino al carattere corrente
+
+		scroll_state.updated = 0; // Reset flag
+	}
 
     switch (scroll_state.state) {
         case 0: // Processamento carattere

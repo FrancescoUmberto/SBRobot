@@ -238,7 +238,12 @@ void MAX72_Update_Data(display_t *display) {
 			break;
 		case PRINT_SCROLL:
 			if (current_data->type == DISPLAY_TYPE_STRING) {
-				scroll_state.text = (const char *)current_data->data;
+				// update scroll_state.updated if text has changed
+				if (strcmp(scroll_state.text, (const char *)current_data->data) != 0) {
+					scroll_state.updated = 1; // Indica che il testo è stato aggiornato
+
+					scroll_state.text = (const char *)current_data->data;
+				}
 			}
 			break;
 	}

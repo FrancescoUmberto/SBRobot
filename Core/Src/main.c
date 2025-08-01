@@ -115,15 +115,18 @@ int main(void)
   HAL_Delay(50);
   Robot_init();
 
-  char str[] = "SBRobot";
-  display_data_t data = {str, PRINT_SCROLL, NO_SETTINGS, DISPLAY_TYPE_STRING, 0};
-  MAX72_Add_Data(&display, &data);
+//  char str[] = "SBRobot";
+//  display_data_t data = {str, PRINT_SCROLL, NO_SETTINGS, DISPLAY_TYPE_STRING, 0};
+//  MAX72_Add_Data(&display, &data);
 
   display_data_t data2 = {&encoder_l.speed, PRINT_FLOAT, MINIDIGITS, DISPLAY_TYPE_FLOAT, 3};
   MAX72_Add_Data(&display, &data2);
 
-  display_data_t data3 = {&power_module.voltage, PRINT_FLOAT, NO_SETTINGS, DISPLAY_TYPE_FLOAT, 2};
+  display_data_t data3 = {&stepper_l.frequency, PRINT_INT, MINIDIGITS, DISPLAY_TYPE_FLOAT, 0};
   MAX72_Add_Data(&display, &data3);
+
+//  display_data_t data4 = {&power_module.voltage, PRINT_FLOAT, NO_SETTINGS, DISPLAY_TYPE_FLOAT, 2};
+//  MAX72_Add_Data(&display, &data4);
 
   while (1)
   {

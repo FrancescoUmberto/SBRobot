@@ -2,30 +2,29 @@
 #include <stdio.h>
 #include <math.h>
 
-float err = 0;
-float freq = 0;
-
-static const float constant = 1020*0.05/2;
+#define KP 350 // Manually tuned proportional gain
+#define KI 890 // MATLAB tuned integral gain
 
 void speed_control(stepper_t *stepper){
 	Encoder_read(stepper->encoder);
 
 	float e = stepper->setpoint_speed - stepper->encoder->speed;
-//	float delta_f = e / ANGLE_STEP ;
-//
-//	stepper->frequency += delta_f;
 
-	stepper->frequency += 350*e + constant*(e+err);
+	stepper->frequency += e / ANGLE_STEP; // Integral only controller
+
+
+//	stepper->frequency += KP*e + (KI * SAMPLING_PERIOD) * (e+stepper->last_error);
+//	stepper->last_error = e;
+
 	uint8_t sign = stepper->frequency > 0;
 
-	freq = stepper->frequency;
+	if (fabs(stepper->frequency) > 9000) {
+		stepper->frequency = 9000 * (sign?1:-1); // Limit frequency to 9000 Hz
+	}
 
 	HAL_GPIO_WritePin(stepper->DIR_PORT, stepper->DIR_PIN, (stepper->encoder->direction_invert > 0 ? sign : !sign));
 
-	err = e;
-
-	// period = (1+ARR)*(1+PSC)/HCLK;
-	stepper->tim->ARR = fabs(1/stepper->frequency)*HCLK-1;
+	stepper->tim->ARR = fabs(1/stepper->frequency)*HCLK-1; // period = (1+ARR)*(1+PSC)/HCLK;
 	*stepper->CCR = (stepper->tim->ARR+1)/2;
 	stepper->tim->EGR = TIM_EGR_UG;
 }
@@ -63,5 +62,7 @@ void Stepper_init(stepper_t *stepper, TIM_HandleTypeDef *htim, uint32_t tim_chan
 
 	stepper->encoder = encoder;
 	stepper->setpoint_speed = 0;
+	stepper->frequency = 0;
+	stepper->last_error = 0;
 }
 

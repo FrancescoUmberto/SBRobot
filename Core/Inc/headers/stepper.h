@@ -6,6 +6,7 @@
 // M2_DIR PB0
 
 typedef struct{
+	float last_error;
 	float angle_step;
 	float setpoint_speed;
 	float frequency;

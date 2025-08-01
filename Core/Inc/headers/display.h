@@ -8,9 +8,9 @@
 #define GLYPH_WIDTH     5     // width of fonts in LETTERS
 
 enum String_Settings {
-    NO_SETTINGS = 0,
-    FLOAT = 1,
-    MINIDIGITS = 2
+    NO_SETTINGS = 0, // No special settings, just print the string as is
+    FLOAT = 1, // When printing FLOAT with decimal point, without minidigits
+    MINIDIGITS = 2 // When printing INT and FLOAT
 };
 
 enum Display_Print_Settings {
@@ -90,7 +90,8 @@ typedef struct {
     uint8_t spacing_counter;   // Contatore per gli spazi tra caratteri
     uint8_t padding_counter;   // Contatore per il padding finale
     uint8_t state;             // Stato corrente: 0=carattere, 1=spacing, 2=padding
-    uint8_t enabled;           // Flag per abilitare/disabilitare lo scrolling
+    uint8_t enabled;
+    uint8_t updated;// Flag per abilitare/disabilitare lo scrolling
 } scroll_state_t;
 
 extern scroll_state_t scroll_state;
