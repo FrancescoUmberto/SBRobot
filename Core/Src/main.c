@@ -19,6 +19,8 @@
 /* Includes ------------------------------------------------------------------*/
 #include "main.h"
 #include "adc.h"
+#include "dma.h"
+#include "i2c.h"
 #include "spi.h"
 #include "tim.h"
 #include "usart.h"
@@ -91,6 +93,7 @@ int main(void)
 
   /* Initialize all configured peripherals */
   MX_GPIO_Init();
+  MX_DMA_Init();
   MX_USART2_UART_Init();
   MX_TIM4_Init();
   MX_TIM6_Init();
@@ -100,13 +103,9 @@ int main(void)
   MX_TIM3_Init();
   MX_TIM5_Init();
   MX_ADC1_Init();
+  MX_I2C1_Init();
+  MX_TIM10_Init();
   /* USER CODE BEGIN 2 */
-  HAL_TIM_Base_Start_IT(&htim6);						// Display timer (0.1MHz)
-  HAL_TIM_Base_Start_IT(&htim7);						// Timeline
-  HAL_TIM_Encoder_Start(&htim3, TIM_CHANNEL_ALL);		// Encoder right
-  HAL_TIM_Encoder_Start(&htim4, TIM_CHANNEL_ALL);		// Encoder left
-  HAL_TIM_PWM_Start(&htim2,TIM_CHANNEL_2);				// Stepper left
-  HAL_TIM_PWM_Start(&htim5,TIM_CHANNEL_1);				// Stepper right
 
   /* USER CODE END 2 */
 
@@ -119,10 +118,10 @@ int main(void)
 //  display_data_t data = {str, PRINT_SCROLL, NO_SETTINGS, DISPLAY_TYPE_STRING, 0};
 //  MAX72_Add_Data(&display, &data);
 
-  display_data_t data2 = {&encoder_l.speed, PRINT_FLOAT, MINIDIGITS, DISPLAY_TYPE_FLOAT, 3};
-  MAX72_Add_Data(&display, &data2);
+//  display_data_t data2 = {&encoder_l.speed, PRINT_FLOAT, MINIDIGITS, DISPLAY_TYPE_FLOAT, 3};
+//  MAX72_Add_Data(&display, &data2);
 
-  display_data_t data3 = {&stepper_l.frequency, PRINT_INT, MINIDIGITS, DISPLAY_TYPE_FLOAT, 0};
+  display_data_t data3 = {&imu.wz, PRINT_FLOAT, MINIDIGITS, DISPLAY_TYPE_FLOAT, 3};
   MAX72_Add_Data(&display, &data3);
 
 //  display_data_t data4 = {&power_module.voltage, PRINT_FLOAT, NO_SETTINGS, DISPLAY_TYPE_FLOAT, 2};
@@ -137,7 +136,8 @@ int main(void)
 	  if (last_cnt != tim6_update_cnt) { // Update every 100ms
 	      last_cnt = tim6_update_cnt;
 
-	      PowerModule_update_data(&power_module);
+	      //TODO Activate
+//	      PowerModule_update_data(&power_module);
 
 	      if (tim6_update_cnt % 5 == 0) { // Update every 500ms
 	    	  // Display refresh data
@@ -211,6 +211,9 @@ void HAL_TIM_PeriodElapsedCallback(TIM_HandleTypeDef *htim){
 	} else if (htim->Instance == TIM7) {
 		speed_control(&stepper_r);
 		speed_control(&stepper_l);
+	} else if (htim->Instance == TIM10){
+		// Read from IMU
+		IMU_ReadData(&imu);
 	}
 }
 
@@ -221,11 +224,16 @@ void HAL_GPIO_EXTI_Callback(uint16_t GPIO_Pin)
   }
 }
 
+void HAL_I2C_MemRxCpltCallback(I2C_HandleTypeDef *hi2c) {
+	if (hi2c == imu.hi2c) {
+		IMU_Compute_Data(&imu);
+	}
+}
+
 int __io_putchar(int ch){
 	ITM_SendChar(ch);
 	return ch;
 }
-
 /* USER CODE END 4 */
 
 /**

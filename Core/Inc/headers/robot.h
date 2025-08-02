@@ -1,8 +1,9 @@
 #include "imu.h"
+#include "button.h"
 #include "stepper.h"
 #include "display.h"
-#include "button.h"
 #include "power_module.h"
+#include "stm32f4xx_hal.h"
 
 typedef struct {
 	imu_t *imu;

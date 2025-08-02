@@ -1,17 +1,10 @@
-13:23:47 **** Incremental Build of configuration Debug for project self-balancing-robot ****
+12:39:15 **** Incremental Build of configuration Debug for project self-balancing-robot ****
 make -j7 all 
-arm-none-eabi-gcc "../Core/Src/modules/power_module.c" -mcpu=cortex-m4 -std=gnu11 -g3 -DDEBUG -DUSE_HAL_DRIVER -DSTM32F446xx -c -I../Core/Inc -I../Drivers/STM32F4xx_HAL_Driver/Inc -I../Drivers/STM32F4xx_HAL_Driver/Inc/Legacy -I../Drivers/CMSIS/Device/ST/STM32F4xx/Include -I../Drivers/CMSIS/Include -O0 -ffunction-sections -fdata-sections -Wall -fstack-usage -fcyclomatic-complexity -MMD -MP -MF"Core/Src/modules/power_module.d" -MT"Core/Src/modules/power_module.o" --specs=nano.specs -mfpu=fpv4-sp-d16 -mfloat-abi=hard -mthumb -o "Core/Src/modules/power_module.o"
-arm-none-eabi-gcc -o "self-balancing-robot.elf" @"objects.list"   -mcpu=cortex-m4 -T"/Users/umbertofrancescocarolini/Desktop/Università/Materiale Magistrale/Embedded Control/SBRobot/STM32F446RETX_FLASH.ld" --specs=nosys.specs -Wl,-Map="self-balancing-robot.map" -Wl,--gc-sections -static --specs=nano.specs -mfpu=fpv4-sp-d16 -mfloat-abi=hard -mthumb -u _printf_float -Wl,--start-group -lc -lm -Wl,--end-group
-Finished building target: self-balancing-robot.elf
- 
 arm-none-eabi-size  self-balancing-robot.elf 
-arm-none-eabi-objdump -h -S self-balancing-robot.elf  > "self-balancing-robot.list"
    text	   data	    bss	    dec	    hex	filename
-  38536	   1424	   2784	  42744	   a6f8	self-balancing-robot.elf
+  50720	   1424	   3296	  55440	   d890	self-balancing-robot.elf
 Finished building: default.size.stdout
  
-Finished building: self-balancing-robot.list
- 
 
-13:23:48 Build Finished. 0 errors, 0 warnings. (took 881ms)
+12:39:15 Build Finished. 0 errors, 0 warnings. (took 279ms)
 
