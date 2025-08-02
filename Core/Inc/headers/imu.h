@@ -21,11 +21,10 @@ typedef struct{
 	float wx;
 	float wy;
 	float wz;
-	uint8_t initialized; // Flag to check if the IMU is initialized
 } imu_t;
 
 
-void IMU_Init(imu_t *imu, I2C_HandleTypeDef *hi2c, uint16_t address);
+uint8_t IMU_Init(imu_t *imu, I2C_HandleTypeDef *hi2c, uint16_t address);
 
 void IMU_ReadData(imu_t *imu);
 

@@ -11,6 +11,56 @@ stepper_t stepper_l;
 imu_t imu;
 power_module_t power_module;
 
+// Definisci i pin secondo la tua scheda
+#define I2C_SCL_GPIO_Port   GPIOB
+#define I2C_SCL_Pin         GPIO_PIN_8
+#define I2C_SDA_GPIO_Port   GPIOB
+#define I2C_SDA_Pin         GPIO_PIN_9
+
+static void I2C1_BusRecovery(void) {
+    GPIO_InitTypeDef  GPIO_InitStruct = {0};
+
+    // 1) Disabilita I2C
+    __HAL_I2C_DISABLE(&hi2c1);
+    __HAL_RCC_I2C1_FORCE_RESET();
+    __HAL_RCC_I2C1_RELEASE_RESET();
+
+    // 2) Configura SCL e SDA come GPIO open-drain con pull-up interne
+    GPIO_InitStruct.Mode  = GPIO_MODE_OUTPUT_OD;
+    GPIO_InitStruct.Pull  = GPIO_PULLUP;
+    GPIO_InitStruct.Speed = GPIO_SPEED_FREQ_HIGH;
+    GPIO_InitStruct.Pin   = I2C_SCL_Pin | I2C_SDA_Pin;
+    HAL_GPIO_Init(GPIOB, &GPIO_InitStruct);
+
+    // 3) Se SDA rimane bassa, genera fino a 9 clock manuali su SCL
+    for (int i = 0; i < 9 && HAL_GPIO_ReadPin(I2C_SDA_GPIO_Port, I2C_SDA_Pin) == GPIO_PIN_RESET; i++) {
+        HAL_GPIO_WritePin(I2C_SCL_GPIO_Port, I2C_SCL_Pin, GPIO_PIN_RESET);
+        HAL_Delay(1);
+        HAL_GPIO_WritePin(I2C_SCL_GPIO_Port, I2C_SCL_Pin, GPIO_PIN_SET);
+        HAL_Delay(1);
+    }
+
+    // 4) Genera un STOP: SDA da bassa → alta mentre SCL alto
+    HAL_GPIO_WritePin(I2C_SDA_GPIO_Port, I2C_SDA_Pin, GPIO_PIN_RESET);
+    HAL_Delay(1);
+    HAL_GPIO_WritePin(I2C_SCL_GPIO_Port, I2C_SCL_Pin, GPIO_PIN_SET);
+    HAL_Delay(1);
+    HAL_GPIO_WritePin(I2C_SDA_GPIO_Port, I2C_SDA_Pin, GPIO_PIN_SET);
+    HAL_Delay(1);
+
+    // 5) Ripristina AF I2C su SCL e SDA
+    GPIO_InitStruct.Mode = GPIO_MODE_AF_OD;
+    GPIO_InitStruct.Pull = GPIO_NOPULL;        // pull-up interne già attive
+    GPIO_InitStruct.Speed= GPIO_SPEED_FREQ_HIGH;
+    GPIO_InitStruct.Pin  = I2C_SCL_Pin | I2C_SDA_Pin;
+    GPIO_InitStruct.Alternate = GPIO_AF4_I2C1;
+    HAL_GPIO_Init(GPIOB, &GPIO_InitStruct);
+
+    // 6) Ri-inizializza l’I2C
+    MX_I2C1_Init();
+}
+
+
 void Robot_init(){
 	HAL_TIM_Base_Start_IT(&htim6);						// Display timer (0.1MHz)
 	HAL_TIM_Base_Start_IT(&htim7);						// Timeline
@@ -20,8 +70,9 @@ void Robot_init(){
 	HAL_TIM_PWM_Start(&htim2,TIM_CHANNEL_2);			// Stepper left
 	HAL_TIM_PWM_Start(&htim5,TIM_CHANNEL_1);			// Stepper right
 
-	// IMU Init to do
-	IMU_Init(&imu, &hi2c1, MPU_6050_ADDR); // Initialize IMU with I2C handler, address, and buffer size
+	while(!IMU_Init(&imu, &hi2c1, MPU_6050_ADDR)){
+		I2C1_BusRecovery(); // Attempt to recover I2C bus if IMU init fails
+	}
 
 	Encoder_init(&encoder_l, &htim3, &htim7, -1);
 	Stepper_init(&stepper_l, &htim5, TIM_CHANNEL_1, &encoder_l, GPIOA, GPIO_PIN_4);
