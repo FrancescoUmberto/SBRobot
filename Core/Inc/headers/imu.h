@@ -21,6 +21,12 @@ typedef struct{
 	float wx;
 	float wy;
 	float wz;
+
+	float angle;
+	uint32_t last_computation_time;
+
+	float az_bias; // Bias for accelerometer z-axis
+	uint8_t calibration_mode; // 1 for calibration mode, 0 for normal operation
 } imu_t;
 
 

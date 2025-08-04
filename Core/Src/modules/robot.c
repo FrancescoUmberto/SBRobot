@@ -11,12 +11,13 @@ stepper_t stepper_l;
 imu_t imu;
 power_module_t power_module;
 
-// Definisci i pin secondo la tua scheda
 #define I2C_SCL_GPIO_Port   GPIOB
 #define I2C_SCL_Pin         GPIO_PIN_8
 #define I2C_SDA_GPIO_Port   GPIOB
 #define I2C_SDA_Pin         GPIO_PIN_9
 
+// quando HAL_I2C_Master_Receive_DMA() fallisce per colpa del bus bloccato (es. I2C_FLAG_BUSY sempre attivo),
+// l’unico rimedio affidabile è resettare completamente il periferico I²C
 static void I2C1_BusRecovery(void) {
     GPIO_InitTypeDef  GPIO_InitStruct = {0};
 
@@ -70,9 +71,13 @@ void Robot_init(){
 	HAL_TIM_PWM_Start(&htim2,TIM_CHANNEL_2);			// Stepper left
 	HAL_TIM_PWM_Start(&htim5,TIM_CHANNEL_1);			// Stepper right
 
+	MAX72_init(&display);
+
 	while(!IMU_Init(&imu, &hi2c1, MPU_6050_ADDR)){
+		MAX72_Print_String("I2C", NO_SETTINGS);
 		I2C1_BusRecovery(); // Attempt to recover I2C bus if IMU init fails
 	}
+	MAX72_Clear();
 
 	Encoder_init(&encoder_l, &htim3, &htim7, -1);
 	Stepper_init(&stepper_l, &htim5, TIM_CHANNEL_1, &encoder_l, GPIOA, GPIO_PIN_4);
@@ -81,6 +86,4 @@ void Robot_init(){
 	Stepper_init(&stepper_r, &htim2, TIM_CHANNEL_2, &encoder_r, GPIOB, GPIO_PIN_0);
 
 	PowerModule_init(&power_module, &hadc1);
-
-	MAX72_init(&display);
 }

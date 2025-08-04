@@ -2,24 +2,26 @@
 #include <stdio.h>
 #include <math.h>
 
-#define KP 350 // Manually tuned proportional gain
-#define KI 890 // MATLAB tuned integral gain
+#define AEP 30 // Actual Error Proportional gain
+#define LEP 300 // Last Error Proportional gain
 
 void speed_control(stepper_t *stepper){
 	Encoder_read(stepper->encoder);
 
 	float e = stepper->setpoint_speed - stepper->encoder->speed;
 
-	stepper->frequency += e / ANGLE_STEP; // Integral only controller
+//	stepper->frequency += e / ANGLE_STEP; // Integral only controller
 
-
-//	stepper->frequency += KP*e + (KI * SAMPLING_PERIOD) * (e+stepper->last_error);
-//	stepper->last_error = e;
+	stepper->frequency += e * AEP + stepper->last_error * LEP; // PI controller
+	stepper->last_error = e;
 
 	uint8_t sign = stepper->frequency > 0;
 
-	if (fabs(stepper->frequency) > 9000) {
-		stepper->frequency = 9000 * (sign?1:-1); // Limit frequency to 9000 Hz
+	if (fabs(stepper->frequency) > MAX_CTRL_FREQUENCY) {
+		stepper->frequency = MAX_CTRL_FREQUENCY * (sign?1:-1); // Limit frequency to 9000 Hz
+		stepper->last_error = (sign && stepper->last_error>0) || (!sign && stepper->last_error<0) ? 0 : stepper->last_error; // Reset last error if the direction has changed
+	} else if (fabs(stepper->frequency) < 20) {
+		stepper->frequency = 0; // Stop the motor if frequency is too low
 	}
 
 	HAL_GPIO_WritePin(stepper->DIR_PORT, stepper->DIR_PIN, (stepper->encoder->direction_invert > 0 ? sign : !sign));

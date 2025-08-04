@@ -1,8 +1,10 @@
 ../Drivers/CMSIS/Include/core_cm4.h:2064:26:ITM_SendChar	4
-../Core/Src/main.c:72:5:main	4
-../Core/Src/main.c:161:6:SystemClock_Config	3
-../Core/Src/main.c:205:6:HAL_TIM_PeriodElapsedCallback	5
-../Core/Src/main.c:220:6:HAL_GPIO_EXTI_Callback	2
-../Core/Src/main.c:227:6:HAL_I2C_MemRxCpltCallback	2
-../Core/Src/main.c:233:5:__io_putchar	1
-../Core/Src/main.c:243:6:Error_Handler	1
+../Core/Src/main.c:68:13:transmit_IMU_data	5
+../Core/Src/main.c:96:13:show_calibration_messages	5
+../Core/Src/main.c:125:5:main	5
+../Core/Src/main.c:225:6:SystemClock_Config	3
+../Core/Src/main.c:269:6:HAL_TIM_PeriodElapsedCallback	5
+../Core/Src/main.c:284:6:HAL_GPIO_EXTI_Callback	2
+../Core/Src/main.c:291:6:HAL_I2C_MemRxCpltCallback	2
+../Core/Src/main.c:298:5:__io_putchar	1
+../Core/Src/main.c:308:6:Error_Handler	1

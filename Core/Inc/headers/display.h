@@ -68,10 +68,11 @@ void MAX72_SendRow(uint8_t row, uint8_t pattern[DEV_NUM]);
 void MAX72_Clear(void);
 
 void MAX72_Add_Data(display_t *display, display_data_t *data);
+void MAX72_Remove_Data(display_t *display, display_data_t *data);
 void MAX72_Update_Data(display_t *display);
 void MAX72_Change_Data(display_t *display, uint8_t force_change);
 void MAX72_Stop_Changing_Data(display_t *display, uint8_t stop_update);
-void MAX72_Resume_Changing_Data(display_t *display);
+void MAX72_Resume_Changing_Data(display_t *display, uint8_t force_update);
 void MAX72_Stop_Updating_Data(display_t *display);
 void MAX72_Resume_Updating_Data(display_t *display);
 
@@ -90,8 +91,8 @@ typedef struct {
     uint8_t spacing_counter;   // Contatore per gli spazi tra caratteri
     uint8_t padding_counter;   // Contatore per il padding finale
     uint8_t state;             // Stato corrente: 0=carattere, 1=spacing, 2=padding
-    uint8_t enabled;
-    uint8_t updated;// Flag per abilitare/disabilitare lo scrolling
+    uint8_t enabled;			// Flag per abilitare/disabilitare lo scrolling
+    uint8_t updated;		// Flag per indicare se il testo è stato aggiornato
 } scroll_state_t;
 
 extern scroll_state_t scroll_state;

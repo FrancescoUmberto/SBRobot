@@ -30,6 +30,8 @@
 /* USER CODE BEGIN Includes */
 #include <stdio.h>
 #include <stdlib.h>
+#include <math.h>
+#include <string.h>
 #include "stm32f4xx.h"
 #include "headers/robot.h"
 /* USER CODE END Includes */
@@ -52,6 +54,7 @@
 
 /* USER CODE BEGIN PV */
 static uint8_t tim6_update_cnt = 0;
+static uint8_t IMU_Rx_Cplt = 0; // Flag to indicate that IMU data has been received
 /* USER CODE END PV */
 
 /* Private function prototypes -----------------------------------------------*/
@@ -62,7 +65,57 @@ void SystemClock_Config(void);
 
 /* Private user code ---------------------------------------------------------*/
 /* USER CODE BEGIN 0 */
+static void transmit_IMU_data(){
+	  char msg[80];
+	  static uint8_t calibration_step_shown = 0;
+	  switch (imu.calibration_mode) {
+		  case 1: // Calibration mode
+	//	    			  MAX72_Print_String("Pitch forward", NO_SETTINGS);
+			  snprintf(msg, sizeof(msg), "Pitch forward\n");
+			break;
+		  case 2: // Calibration mode
+			  //	    			  MAX72_Print_String("Pitch backward", NO_SETTINGS);
+			  snprintf(msg, sizeof(msg), "Pitch backward\n");
+			break;
+	  }
+	  if (calibration_step_shown < imu.calibration_mode) {
+		  HAL_UART_Transmit(&huart2, (uint8_t*)msg, strlen(msg), HAL_MAX_DELAY);
+		  calibration_step_shown = imu.calibration_mode; // Update the last shown step
+	  }
 
+	  // print az imu
+	  if (imu.calibration_mode){
+		  snprintf(msg, sizeof(msg), "Az: %.3f	Bias: %.3f	wy: %.3f	Ax: %.3f\n", imu.az, imu.az_bias,imu.wy,imu.ax);
+	  } else {
+		  snprintf(msg, sizeof(msg), "Deg: %.3f °	-	wy: %.2f	ax: %.3f\n", imu.angle, imu.wy-2.957f, imu.ax-.213f);
+	  }
+
+	  HAL_UART_Transmit(&huart2, (uint8_t*)msg, strlen(msg), HAL_MAX_DELAY);
+}
+
+static void show_calibration_messages(){
+		  static uint8_t calibration_step_shown = 0;
+		  static char msg[20];
+		  switch (imu.calibration_mode) {
+			  case 1: // Calibration mode
+		//	    			  MAX72_Print_String("Pitch forward", NO_SETTINGS);
+				  snprintf(msg, sizeof(msg), "Pitch forward\n");
+				break;
+			  case 2: // Calibration mode
+				  //	    			  MAX72_Print_String("Pitch backward", NO_SETTINGS);
+				  snprintf(msg, sizeof(msg), "Pitch backward\n");
+				break;
+		  }
+		  if (calibration_step_shown < imu.calibration_mode) {
+			  MAX72_Stop_Changing_Data(&display, 1);
+			  MAX72_Scroll_Start_IT(msg);
+			  calibration_step_shown = imu.calibration_mode; // Update the last shown step
+		  } else if (calibration_step_shown>imu.calibration_mode) {
+			  // Reset the calibration step shown when calibration is complete
+			  calibration_step_shown = 0;
+			  MAX72_Resume_Changing_Data(&display,1);
+		  }
+}
 /* USER CODE END 0 */
 
 /**
@@ -121,7 +174,7 @@ int main(void)
 //  display_data_t data2 = {&encoder_l.speed, PRINT_FLOAT, MINIDIGITS, DISPLAY_TYPE_FLOAT, 3};
 //  MAX72_Add_Data(&display, &data2);
 
-  display_data_t data3 = {&imu.wz, PRINT_FLOAT, MINIDIGITS, DISPLAY_TYPE_FLOAT, 3};
+  display_data_t data3 = {&imu.angle, PRINT_FLOAT, FLOAT, DISPLAY_TYPE_FLOAT, 2};
   MAX72_Add_Data(&display, &data3);
 
 //  display_data_t data4 = {&power_module.voltage, PRINT_FLOAT, NO_SETTINGS, DISPLAY_TYPE_FLOAT, 2};
@@ -132,6 +185,12 @@ int main(void)
     /* USER CODE END WHILE */
 
     /* USER CODE BEGIN 3 */
+
+	  if (IMU_Rx_Cplt) {
+		  IMU_Rx_Cplt = 0; // Reset flag
+		  IMU_Compute_Data(&imu); // Process received data
+	  }
+
 	  static uint8_t last_cnt = 255;
 	  if (last_cnt != tim6_update_cnt) { // Update every 100ms
 	      last_cnt = tim6_update_cnt;
@@ -139,9 +198,14 @@ int main(void)
 	      //TODO Activate
 //	      PowerModule_update_data(&power_module);
 
+
 	      if (tim6_update_cnt % 5 == 0) { // Update every 500ms
 	    	  // Display refresh data
 	    	  MAX72_Update_Data(&display);
+
+	    	  // Send IMU data via UART for debugging
+//	    	  transmit_IMU_data();
+			  show_calibration_messages();
 
 	    	  if (tim6_update_cnt % 10 == 0) { // Every 1 second
 	    		  MAX72_Change_Data(&display,0);
@@ -226,7 +290,8 @@ void HAL_GPIO_EXTI_Callback(uint16_t GPIO_Pin)
 
 void HAL_I2C_MemRxCpltCallback(I2C_HandleTypeDef *hi2c) {
 	if (hi2c == imu.hi2c) {
-		IMU_Compute_Data(&imu);
+		// Data received from IMU, process it
+		IMU_Rx_Cplt = 1; // Set flag to indicate data is ready
 	}
 }
 

@@ -2,6 +2,7 @@
 #include "encoder.h"
 
 #define ANGLE_STEP 0.000981748	// MOTOR_STEP / MICRO_STEP		MOTOR_STEP = 1.8°	MICRO_STEP = 32
+#define MAX_CTRL_FREQUENCY 9000.0f	// Maximum control frequency in Hz
 // M2_PUL PA1
 // M2_DIR PB0
 

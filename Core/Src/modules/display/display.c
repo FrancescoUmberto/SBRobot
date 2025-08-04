@@ -184,6 +184,26 @@ void MAX72_Add_Data(display_t *display, display_data_t *data) {
 	}
 }
 
+void MAX72_Remove_Data(display_t *display, display_data_t *data) {
+	if (display->data_count == 0) {
+		return; // Non ci sono dati da rimuovere
+	}
+
+	for (uint8_t i = 0; i < display->data_count; i++) {
+		if (display->data[i].data == data->data){
+			// Sposta gli elementi successivi indietro
+			for (uint8_t j = i; j < display->data_count - 1; j++) {
+				display->data[j] = display->data[j + 1];
+			}
+			display->data_count--; // Decrementa il conteggio dei dati
+			if (display->current_index >= display->data_count) {
+				display->current_index = 0; // Resetta l'indice corrente se necessario
+			}
+			break; // Esci dal ciclo dopo aver rimosso il dato
+		}
+	}
+}
+
 void MAX72_Update_Data(display_t *display) {
 	if (display->data_count == 0 || !display->update_enabled) {
 		return; // Non ci sono dati da visualizzare
@@ -228,7 +248,7 @@ void MAX72_Update_Data(display_t *display) {
 			break;
 		case PRINT_FLOAT:
 			if (current_data->type == DISPLAY_TYPE_FLOAT) {
-				MAX72_Print_Float(*(float *)current_data->data, current_data->float_decimals, current_data->string_settings);
+				MAX72_Print_Float(*(float *)current_data->data, current_data->float_decimals, current_data->string_settings == 2);
 			}
 			break;
 		case PRINT_STRING:
@@ -278,9 +298,12 @@ void MAX72_Stop_Changing_Data(display_t *display, uint8_t stop_update) {
 	}
 }
 
-void MAX72_Resume_Changing_Data(display_t *display) {
+void MAX72_Resume_Changing_Data(display_t *display, uint8_t force_update) {
 	display->change_enabled = 1; // Abilita il cambio automatico dei dati
 	MAX72_Resume_Updating_Data(display); // Assicurati che l'aggiornamento sia abilitato
+	if (force_update) {
+		MAX72_Update_Data(display); // Forza il cambio dei dati
+	}
 }
 
 void MAX72_Stop_Updating_Data(display_t *display) {
