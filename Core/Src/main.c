@@ -85,9 +85,9 @@ static void transmit_IMU_data(){
 
 	  // print az imu
 	  if (imu.calibration_mode){
-		  snprintf(msg, sizeof(msg), "Az: %.3f	Bias: %.3f	wy: %.3f	Ax: %.3f\n", imu.az, imu.az_bias,imu.wy,imu.ax);
+		  snprintf(msg, sizeof(msg), "Az: %.3f	Bias: %.3f	ax: %.3f	wy: %.3f\n", imu.az, imu.az_bias,imu.ax,imu.wy);
 	  } else {
-		  snprintf(msg, sizeof(msg), "Deg: %.3f °	-	wy: %.2f	ax: %.3f\n", imu.angle, imu.wy-2.957f, imu.ax-.213f);
+		  snprintf(msg, sizeof(msg), "Deg: %.3f ° - wy: %.3f - ax: %.3f - az: %.3f - az_bias: %.3f\n", imu.angle, imu.wy, imu.ax,imu.az,imu.az_bias);
 	  }
 
 	  HAL_UART_Transmit(&huart2, (uint8_t*)msg, strlen(msg), HAL_MAX_DELAY);
@@ -171,8 +171,8 @@ int main(void)
 //  display_data_t data = {str, PRINT_SCROLL, NO_SETTINGS, DISPLAY_TYPE_STRING, 0};
 //  MAX72_Add_Data(&display, &data);
 
-//  display_data_t data2 = {&encoder_l.speed, PRINT_FLOAT, MINIDIGITS, DISPLAY_TYPE_FLOAT, 3};
-//  MAX72_Add_Data(&display, &data2);
+  display_data_t data2 = {&encoder_l.speed, PRINT_FLOAT, MINIDIGITS, DISPLAY_TYPE_FLOAT, 3};
+  MAX72_Add_Data(&display, &data2);
 
   display_data_t data3 = {&imu.angle, PRINT_FLOAT, FLOAT, DISPLAY_TYPE_FLOAT, 2};
   MAX72_Add_Data(&display, &data3);
@@ -205,7 +205,7 @@ int main(void)
 
 	    	  // Send IMU data via UART for debugging
 //	    	  transmit_IMU_data();
-			  show_calibration_messages();
+//			  show_calibration_messages();
 
 	    	  if (tim6_update_cnt % 10 == 0) { // Every 1 second
 	    		  MAX72_Change_Data(&display,0);

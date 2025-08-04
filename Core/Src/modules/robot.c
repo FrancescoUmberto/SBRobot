@@ -87,3 +87,7 @@ void Robot_init(){
 
 	PowerModule_init(&power_module, &hadc1);
 }
+
+void Robot_balancing_control() {
+
+}

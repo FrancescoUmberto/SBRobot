@@ -14,7 +14,7 @@ typedef struct{
 	encoder_t *encoder;
 	TIM_TypeDef *tim;
 	uint32_t *CCR;
-	uint32_t DIR_PORT;
+	GPIO_TypeDef *DIR_PORT;
 	uint16_t DIR_PIN;
 } stepper_t;
 

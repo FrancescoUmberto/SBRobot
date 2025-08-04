@@ -24,3 +24,5 @@ extern imu_t imu;
 extern power_module_t power_module;
 
 void Robot_init();
+
+void Robot_balancing_control();

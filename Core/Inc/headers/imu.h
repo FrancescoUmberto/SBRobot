@@ -18,9 +18,12 @@ typedef struct{
 	float ax;
 	float ay;
 	float az;
+	flaot vx;
+
 	float wx;
 	float wy;
 	float wz;
+	float alpha_y;
 
 	float angle;
 	uint32_t last_computation_time;

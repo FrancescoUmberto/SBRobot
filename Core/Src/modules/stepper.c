@@ -3,7 +3,9 @@
 #include <math.h>
 
 #define AEP 30 // Actual Error Proportional gain
-#define LEP 300 // Last Error Proportional gain
+#define LEP 205 // Last Error Proportional gain
+
+float freq = 0.0f; // Frequency in Hz
 
 void speed_control(stepper_t *stepper){
 	Encoder_read(stepper->encoder);
@@ -16,6 +18,8 @@ void speed_control(stepper_t *stepper){
 	stepper->last_error = e;
 
 	uint8_t sign = stepper->frequency > 0;
+
+	freq = stepper->frequency; // Store frequency for debugging
 
 	if (fabs(stepper->frequency) > MAX_CTRL_FREQUENCY) {
 		stepper->frequency = MAX_CTRL_FREQUENCY * (sign?1:-1); // Limit frequency to 9000 Hz
