@@ -1,8 +1,9 @@
 #include "headers/imu.h"
 #include <math.h>
 
-#define IMU_EMA_ALPHA 0.03921568627f		// Alpha = 2 / (1 + 50)	EMA Filter coefficient for 50 samples window
-//#define IMU_EMA_ALPHA 0.1538461538f	// Alpha = 2 / (1 + 12)	EMA Filter coefficient for 12 samples window
+// #define IMU_EMA_ALPHA 0.03921568627f		// Alpha = 2 / (1 + 50)	EMA Filter coefficient for 50 samples window
+// #define IMU_EMA_ALPHA 0.08695652174		// Alpha = 2 / (1 + 22)	EMA Filter coefficient for 22 samples window
+#define IMU_EMA_ALPHA 0.1538461538f	// Alpha = 2 / (1 + 12)	EMA Filter coefficient for 12 samples window
 
 static void IMU_Calibrate(imu_t *imu) {
 	imu->az = imu->az * (1-IMU_EMA_ALPHA) + ((int16_t)(imu->pData[4] << 8) | imu->pData[5]) * IMU_EMA_ALPHA;
@@ -87,9 +88,9 @@ void IMU_Compute_Data(imu_t *imu) {
 	imu->alpha_y = (imu->wy - old_wy) / ((float)delta_time / 1000.0f); // Calculate angular acceleration around y-axis
 
 	if(imu->calibration_mode) {
-		imu->angle = atan2f(imu->ax, imu->az) * 180.0f / M_PI; // Use accelerometer data to compute angle in calibration mode
+		imu->angle = -atan2f(imu->ax, imu->az) * 180.0f / M_PI; // Use accelerometer data to compute angle in calibration mode
 		imu->calibration_mode = 0; // Reset calibration mode after computing angle
 	}else {
-		imu->angle = .98f * (imu->angle + imu->wy * (float)delta_time/1000.0f) + .02f * atan2f(imu->ax, imu->az) * 180.0f / M_PI; // Complementary filter to combine gyroscope and accelerometer data
+		imu->angle = .996f * (imu->angle + imu->wy * (float)delta_time/1000.0f) - .004f * atan2f(imu->ax, imu->az) * 180.0f / M_PI; // Complementary filter to combine gyroscope and accelerometer data
 	}
 }

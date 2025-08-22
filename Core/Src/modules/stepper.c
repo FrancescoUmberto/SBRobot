@@ -12,7 +12,7 @@ void speed_control(stepper_t *stepper){
 
 	float e = stepper->setpoint_speed - stepper->encoder->speed;
 
-//	stepper->frequency += e / ANGLE_STEP; // Integral only controller
+	// stepper->frequency += e / ANGLE_STEP; // Integral only controller
 
 	stepper->frequency += e * AEP + stepper->last_error * LEP; // PI controller
 	stepper->last_error = e;

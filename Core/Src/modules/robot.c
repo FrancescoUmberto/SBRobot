@@ -1,6 +1,7 @@
 #include "headers/robot.h"
 #include "tim.h"
 #include "adc.h"
+#include <math.h>
 
 encoder_t encoder_r;
 stepper_t stepper_r;
@@ -10,6 +11,7 @@ stepper_t stepper_l;
 
 imu_t imu;
 power_module_t power_module;
+pid_t pid;
 
 #define I2C_SCL_GPIO_Port   GPIOB
 #define I2C_SCL_Pin         GPIO_PIN_8
@@ -62,7 +64,7 @@ static void I2C1_BusRecovery(void) {
 }
 
 
-void Robot_init(){
+void Robot_init(robot_t *robot) {
 	HAL_TIM_Base_Start_IT(&htim6);						// Display timer (0.1MHz)
 	HAL_TIM_Base_Start_IT(&htim7);						// Timeline
 	HAL_TIM_Base_Start_IT(&htim10);						// Stepper timer
@@ -78,16 +80,68 @@ void Robot_init(){
 		I2C1_BusRecovery(); // Attempt to recover I2C bus if IMU init fails
 	}
 	MAX72_Clear();
+    robot->imu = &imu;
 
 	Encoder_init(&encoder_l, &htim3, &htim7, -1);
+    robot->encoder_l = &encoder_l;
 	Stepper_init(&stepper_l, &htim5, TIM_CHANNEL_1, &encoder_l, GPIOA, GPIO_PIN_4);
-
+    robot->stepper_l = &stepper_l;
 	Encoder_init(&encoder_r, &htim4, &htim7, 1);
+    robot->encoder_r = &encoder_r;
 	Stepper_init(&stepper_r, &htim2, TIM_CHANNEL_2, &encoder_r, GPIOB, GPIO_PIN_0);
+    robot->stepper_r = &stepper_r;
 
 	PowerModule_init(&power_module, &hadc1);
+
+    PID_Init(&pid);
 }
 
-void Robot_balancing_control() {
+float integral_error = 0.0f;
+float last_error = 0.0f;
+float derivative_error = 0.0f;
+float last_speed_error = 0.0f;
+float derivative_speed_error = 0.0f;
 
+void PID_Init(pid_t *pid){
+	pid->Kp = -3.1f;
+	pid->Ki = -0.08f;
+	pid->Kd = -0.011f;
+    pid->Vp = 0.0f;
+    pid->Vi = 0.0f;
+    pid->Vd = 0.0f;
+	pid->angle_setpoint = -0.5f;
+    pid->speed_setpoint = 0.0f;
+}
+
+void PID_Update(pid_t *pid) {
+	float error = pid->angle_setpoint - imu.angle;
+    float speed_error = pid->speed_setpoint - imu.wy; // Use angular velocity for speed error
+
+    // Stop the motors if imu.angle is greater than 10 degrees
+    if (fabs(error) > 20.0f) {
+        set_speed(&stepper_l, 0.0f);
+        set_speed(&stepper_r, 0.0f);
+        return;
+    }
+	integral_error += error;
+	derivative_error = (error - last_error)/SAMPLING_PERIOD;
+	derivative_speed_error = (speed_error - last_speed_error)/SAMPLING_PERIOD;
+
+	float propotional_component = pid->Kp * error;
+
+	float integral_component = pid->Ki * integral_error;
+
+	float derivative_component = pid->Kd * derivative_error;
+//
+//	float vp_component = pid->Vp * speed_error * (1<= .5/fabs(imu.angle) ? 1 : .5/fabs(imu.angle));
+//
+//	float vd_component = pid->Vd * derivative_speed_error;
+
+	float speed_setpoint = propotional_component + integral_component + derivative_component; // + vp_component + vd_component;
+
+	set_speed(&stepper_l, speed_setpoint);
+    set_speed(&stepper_r, speed_setpoint);
+
+	last_error = error;
+	last_speed_error = speed_error;
 }

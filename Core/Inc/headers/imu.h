@@ -18,7 +18,7 @@ typedef struct{
 	float ax;
 	float ay;
 	float az;
-	flaot vx;
+	float vx;
 
 	float wx;
 	float wy;

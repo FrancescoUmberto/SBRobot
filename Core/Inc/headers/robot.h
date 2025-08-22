@@ -3,6 +3,7 @@
 #include "stepper.h"
 #include "display.h"
 #include "power_module.h"
+#include "controller.h"
 #include "stm32f4xx_hal.h"
 
 typedef struct {
@@ -14,6 +15,20 @@ typedef struct {
 	power_module_t *power_module;
 } robot_t;
 
+typedef struct {
+	float Kp;
+	float Ki;
+	float Kd;
+	float Vp;
+	float Vi;
+	float Vd;
+	float angle_setpoint;
+	float speed_setpoint;
+} pid_t;
+
+void PID_Init(pid_t *pid);
+void PID_Update(pid_t *pid);
+
 extern encoder_t encoder_r;
 extern stepper_t stepper_r;
 
@@ -23,6 +38,6 @@ extern stepper_t stepper_l;
 extern imu_t imu;
 extern power_module_t power_module;
 
-void Robot_init();
+extern pid_t pid;
 
-void Robot_balancing_control();
+void Robot_init(robot_t *robot);

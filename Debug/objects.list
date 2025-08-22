@@ -12,6 +12,7 @@
 "./Core/Src/tim.o"
 "./Core/Src/usart.o"
 "./Core/Src/modules/button.o"
+"./Core/Src/modules/controller.o"
 "./Core/Src/modules/encoder.o"
 "./Core/Src/modules/imu.o"
 "./Core/Src/modules/power_module.o"

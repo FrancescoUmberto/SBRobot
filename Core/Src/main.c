@@ -55,6 +55,7 @@
 /* USER CODE BEGIN PV */
 static uint8_t tim6_update_cnt = 0;
 static uint8_t IMU_Rx_Cplt = 0; // Flag to indicate that IMU data has been received
+robot_t robot;
 /* USER CODE END PV */
 
 /* Private function prototypes -----------------------------------------------*/
@@ -165,14 +166,14 @@ int main(void)
   /* Infinite loop */
   /* USER CODE BEGIN WHILE */
   HAL_Delay(50);
-  Robot_init();
+  Robot_init(&robot);
 
 //  char str[] = "SBRobot";
 //  display_data_t data = {str, PRINT_SCROLL, NO_SETTINGS, DISPLAY_TYPE_STRING, 0};
 //  MAX72_Add_Data(&display, &data);
 
-  display_data_t data2 = {&encoder_l.speed, PRINT_FLOAT, MINIDIGITS, DISPLAY_TYPE_FLOAT, 3};
-  MAX72_Add_Data(&display, &data2);
+//  display_data_t data2 = {&encoder_l.speed, PRINT_FLOAT, MINIDIGITS, DISPLAY_TYPE_FLOAT, 3};
+//  MAX72_Add_Data(&display, &data2);
 
   display_data_t data3 = {&imu.angle, PRINT_FLOAT, FLOAT, DISPLAY_TYPE_FLOAT, 2};
   MAX72_Add_Data(&display, &data3);
@@ -198,10 +199,10 @@ int main(void)
 	      //TODO Activate
 //	      PowerModule_update_data(&power_module);
 
-
+	      MAX72_Update_Data(&display);
 	      if (tim6_update_cnt % 5 == 0) { // Update every 500ms
 	    	  // Display refresh data
-	    	  MAX72_Update_Data(&display);
+
 
 	    	  // Send IMU data via UART for debugging
 //	    	  transmit_IMU_data();
@@ -273,6 +274,7 @@ void HAL_TIM_PeriodElapsedCallback(TIM_HandleTypeDef *htim){
 			tim6_update_cnt = 0;
 		}
 	} else if (htim->Instance == TIM7) {
+		PID_Update(&pid);
 		speed_control(&stepper_r);
 		speed_control(&stepper_l);
 	} else if (htim->Instance == TIM10){
