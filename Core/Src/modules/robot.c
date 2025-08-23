@@ -96,52 +96,64 @@ void Robot_init(robot_t *robot) {
     PID_Init(&pid);
 }
 
-float integral_error = 0.0f;
-float last_error = 0.0f;
-float derivative_error = 0.0f;
-float last_speed_error = 0.0f;
-float derivative_speed_error = 0.0f;
-
 void PID_Init(pid_t *pid){
-	pid->Kp = -3.1f;
-	pid->Ki = -0.08f;
-	pid->Kd = -0.011f;
-    pid->Vp = 0.0f;
-    pid->Vi = 0.0f;
-    pid->Vd = 0.0f;
-	pid->angle_setpoint = -0.5f;
-    pid->speed_setpoint = 0.0f;
+	pid->Kp = -2.0f;
+	pid->Ki = -20.0f;
+	pid->Kd = -0.06f;
+
+	pid->base_angle_sp = -1.0f;
+
+    pid->Kp_speed = 0.4f;
+    pid->Ki_speed = 0.0f;
+    pid->Kd_speed = 0.0008f;
+
+    pid->speed_sp = 0.0f;
+
+    pid->max_angle_offset = 2.0f;
+    pid->angle_sp = 0.0f; // Do not change, it is only for CubeMonitor
+
+    pid->active = 0;
+    PID_Reset(pid);
 }
 
 void PID_Update(pid_t *pid) {
-	float error = pid->angle_setpoint - imu.angle;
-    float speed_error = pid->speed_setpoint - imu.wy; // Use angular velocity for speed error
+    float speed_err = pid->speed_sp - (encoder_r.speed + encoder_l.speed)/2.0f;
 
-    // Stop the motors if imu.angle is greater than 10 degrees
-    if (fabs(error) > 20.0f) {
+    pid->integral_speed_err += speed_err * SAMPLING_PERIOD;
+    float derivative_speed_err = (speed_err - pid->last_speed_err)/SAMPLING_PERIOD;
+
+    float angle_offset = pid->Kp_speed * speed_err + pid->Ki_speed * pid->integral_speed_err + pid->Kd_speed * derivative_speed_err;
+
+    if (angle_offset > pid->max_angle_offset) angle_offset = pid->max_angle_offset;
+    else if (angle_offset < -pid->max_angle_offset) angle_offset = -pid->max_angle_offset;
+
+    pid->angle_sp = pid->base_angle_sp + angle_offset;
+
+	float error = pid->angle_sp - imu.angle;
+
+	pid->integral_error += error * SAMPLING_PERIOD;
+	float derivative_error = (error - pid->last_error)/SAMPLING_PERIOD;
+
+	float speed_setpoint = pid->Kp * error + 
+                            pid->Ki * pid->integral_error +
+                            pid->Kd * derivative_error;
+
+    if (fabs(error) > 40.0f) {
         set_speed(&stepper_l, 0.0f);
         set_speed(&stepper_r, 0.0f);
-        return;
+        PID_Reset(pid);
+    }else {
+        set_speed(&stepper_l, speed_setpoint);
+        set_speed(&stepper_r, speed_setpoint);
     }
-	integral_error += error;
-	derivative_error = (error - last_error)/SAMPLING_PERIOD;
-	derivative_speed_error = (speed_error - last_speed_error)/SAMPLING_PERIOD;
 
-	float propotional_component = pid->Kp * error;
+    pid->last_speed_err = speed_err;
+	pid->last_error = error;
+}
 
-	float integral_component = pid->Ki * integral_error;
-
-	float derivative_component = pid->Kd * derivative_error;
-//
-//	float vp_component = pid->Vp * speed_error * (1<= .5/fabs(imu.angle) ? 1 : .5/fabs(imu.angle));
-//
-//	float vd_component = pid->Vd * derivative_speed_error;
-
-	float speed_setpoint = propotional_component + integral_component + derivative_component; // + vp_component + vd_component;
-
-	set_speed(&stepper_l, speed_setpoint);
-    set_speed(&stepper_r, speed_setpoint);
-
-	last_error = error;
-	last_speed_error = speed_error;
+void PID_Reset(pid_t *pid) {
+    pid->integral_error = 0.0f;
+    pid->integral_speed_err = 0.0f;
+    pid->last_error = 0.0f;
+    pid->last_speed_err = 0.0f;
 }

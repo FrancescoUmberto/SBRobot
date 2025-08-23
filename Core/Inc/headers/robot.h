@@ -16,18 +16,22 @@ typedef struct {
 } robot_t;
 
 typedef struct {
-	float Kp;
-	float Ki;
-	float Kd;
-	float Vp;
-	float Vi;
-	float Vd;
-	float angle_setpoint;
-	float speed_setpoint;
+	float Kp, Ki, Kd;
+	float base_angle_sp;
+	float integral_error, last_error;
+
+	float Kp_speed, Ki_speed, Kd_speed;
+	float speed_sp;
+	float integral_speed_err, last_speed_err;
+
+	float max_angle_offset, angle_sp;
+
+	uint8_t active;
 } pid_t;
 
 void PID_Init(pid_t *pid);
 void PID_Update(pid_t *pid);
+void PID_Reset(pid_t *pid);
 
 extern encoder_t encoder_r;
 extern stepper_t stepper_r;

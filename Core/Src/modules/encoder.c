@@ -12,8 +12,10 @@ static void update_direction(encoder_t *encoder){
 
 static void update_displacement(encoder_t *encoder){
 
-	encoder->displacement = ((float)encoder->tim->CNT - 4096) * DCF * encoder->direction_invert;
+	encoder->displacement = ((float)encoder->tim->CNT - 4096) * RCF * encoder->direction_invert;
 	encoder->tim->CNT = 4096;
+
+	encoder->position += encoder->displacement;
 	return;
 }
 
@@ -33,8 +35,11 @@ void Encoder_init(encoder_t *encoder, TIM_HandleTypeDef *em_tim, TIM_HandleTypeD
 	encoder->tim = em_tim->Instance;
 	encoder->tim->CNT = 4096;
 	encoder->direction_invert = direction_invert;
-
-	encoder->speed = 0;
+	encoder->direction = 0;
+	encoder->displacement = 0.0f;
+	encoder->speed = 0.0f;
+	encoder->position = 0.0f;
+	
 	HCLK = HAL_RCC_GetHCLKFreq();
 	SAMPLING_PERIOD = (float)(1+s_tim->Instance->ARR)*(1+s_tim->Instance->PSC)/HCLK;
 }

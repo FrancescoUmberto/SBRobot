@@ -274,7 +274,10 @@ void HAL_TIM_PeriodElapsedCallback(TIM_HandleTypeDef *htim){
 			tim6_update_cnt = 0;
 		}
 	} else if (htim->Instance == TIM7) {
-		PID_Update(&pid);
+    if (pid.active){
+      PID_Update(&pid);
+    }
+
 		speed_control(&stepper_r);
 		speed_control(&stepper_l);
 	} else if (htim->Instance == TIM10){
@@ -297,10 +300,10 @@ void HAL_I2C_MemRxCpltCallback(I2C_HandleTypeDef *hi2c) {
 	}
 }
 
-int __io_putchar(int ch){
-	ITM_SendChar(ch);
-	return ch;
-}
+// int __io_putchar(int ch){
+// 	ITM_SendChar(ch);
+// 	return ch;
+// }
 /* USER CODE END 4 */
 
 /**

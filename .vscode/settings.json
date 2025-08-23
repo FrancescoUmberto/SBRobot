@@ -1,5 +1,6 @@
 {
     "files.associations": {
-        "robot.h": "c"
+        "robot.h": "c",
+        "encoder.h": "c"
     }
 }
