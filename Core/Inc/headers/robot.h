@@ -7,15 +7,6 @@
 #include "stm32f4xx_hal.h"
 
 typedef struct {
-	imu_t *imu;
-	encoder_t *encoder_l;
-	encoder_t *encoder_r;
-	stepper_t *stepper_l;
-	stepper_t *stepper_r;
-	power_module_t *power_module;
-} robot_t;
-
-typedef struct {
 	float Kp, Ki, Kd;
 	float base_angle_sp;
 	float integral_error, last_error;
@@ -33,6 +24,17 @@ void PID_Init(pid_t *pid);
 void PID_Update(pid_t *pid);
 void PID_Reset(pid_t *pid);
 
+typedef struct {
+	imu_t *imu;
+	encoder_t *encoder_l;
+	encoder_t *encoder_r;
+	stepper_t *stepper_l;
+	stepper_t *stepper_r;
+	power_module_t *power_module;
+	pid_t *pid;
+	uint8_t base_angle_config;
+} robot_t;
+
 extern encoder_t encoder_r;
 extern stepper_t stepper_r;
 
@@ -45,3 +47,4 @@ extern power_module_t power_module;
 extern pid_t pid;
 
 void Robot_init(robot_t *robot);
+void Robot_read_serial_msg(robot_t *robot, char *msg);

@@ -55,6 +55,12 @@
 /* USER CODE BEGIN PV */
 static uint8_t tim6_update_cnt = 0;
 static uint8_t IMU_Rx_Cplt = 0; // Flag to indicate that IMU data has been received
+
+uint8_t rx_byte;
+static uint8_t rx_index = 0;
+static char js_buffer[14];
+static uint8_t js_msg_ready = 0;
+
 robot_t robot;
 /* USER CODE END PV */
 
@@ -159,6 +165,7 @@ int main(void)
   MX_ADC1_Init();
   MX_I2C1_Init();
   MX_TIM10_Init();
+  MX_USART6_UART_Init();
   /* USER CODE BEGIN 2 */
 
   /* USER CODE END 2 */
@@ -181,6 +188,7 @@ int main(void)
 //  display_data_t data4 = {&power_module.voltage, PRINT_FLOAT, NO_SETTINGS, DISPLAY_TYPE_FLOAT, 2};
 //  MAX72_Add_Data(&display, &data4);
 
+  HAL_UART_Receive_IT(&huart6, &rx_byte, 1);
   while (1)
   {
     /* USER CODE END WHILE */
@@ -190,6 +198,11 @@ int main(void)
 	  if (IMU_Rx_Cplt) {
 		  IMU_Rx_Cplt = 0; // Reset flag
 		  IMU_Compute_Data(&imu); // Process received data
+	  }
+
+	  if (js_msg_ready) {
+		  js_msg_ready = 0; // Reset flag
+		  Robot_read_serial_msg(&robot, js_buffer);
 	  }
 
 	  static uint8_t last_cnt = 255;
@@ -300,10 +313,27 @@ void HAL_I2C_MemRxCpltCallback(I2C_HandleTypeDef *hi2c) {
 	}
 }
 
-// int __io_putchar(int ch){
-// 	ITM_SendChar(ch);
-// 	return ch;
-// }
+void HAL_UART_RxCpltCallback(UART_HandleTypeDef *huart) {
+	if (huart->Instance == USART6) {
+
+		js_buffer[rx_index++] = rx_byte;
+
+		if (rx_index >= 13) {
+			js_buffer[13] = '\0';     // chiudi stringa
+			js_msg_ready = 1;         // messaggio pronto
+			rx_index = 0;             // ricomincia
+		}
+
+		// riparti sempre per il prossimo byte
+		HAL_UART_Receive_IT(&huart6, &rx_byte, 1);
+
+	}
+}
+
+ int __io_putchar(int ch){
+ 	ITM_SendChar(ch);
+ 	return ch;
+ }
 /* USER CODE END 4 */
 
 /**

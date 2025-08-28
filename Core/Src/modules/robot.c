@@ -2,6 +2,8 @@
 #include "tim.h"
 #include "adc.h"
 #include <math.h>
+#include <string.h>
+#include <stdio.h>
 
 encoder_t encoder_r;
 stepper_t stepper_r;
@@ -65,6 +67,7 @@ static void I2C1_BusRecovery(void) {
 
 
 void Robot_init(robot_t *robot) {
+
 	HAL_TIM_Base_Start_IT(&htim6);						// Display timer (0.1MHz)
 	HAL_TIM_Base_Start_IT(&htim7);						// Timeline
 	HAL_TIM_Base_Start_IT(&htim10);						// Stepper timer
@@ -92,22 +95,65 @@ void Robot_init(robot_t *robot) {
     robot->stepper_r = &stepper_r;
 
 	PowerModule_init(&power_module, &hadc1);
+	robot->power_module = &power_module;
 
     PID_Init(&pid);
+    robot->pid = &pid;
+
+    robot->base_angle_config = 0;
 }
+
+void Robot_read_serial_msg(robot_t *robot, char *msg) {
+    static float last_base_angle_stick_val = 0.0f;
+    float js_x = 0.0f, js_y = 0.0f;
+    uint8_t base_angle_config = 0;
+
+    // Pulizia del buffer: rimuove eventuali spazi/residui
+    char clean_msg[14] = {0}; // 13 caratteri + \0
+    strncpy(clean_msg, msg, 13);
+    clean_msg[13] = '\0';
+
+    // Parsing robusto con sscanf
+    int parsed = sscanf(clean_msg, "%f;%f;%hhu", &js_x, &js_y, &base_angle_config);
+    if (parsed != 3) {
+        // Pacchetto incompleto o malformato, esci
+        return;
+    }
+
+    // Gestione base angle mode
+    if (base_angle_config != robot->base_angle_config) {
+        last_base_angle_stick_val = 0.0f;
+        robot->pid->speed_sp = 0.0f; // Reset speed setpoint when changing mode
+    }
+    robot->base_angle_config = base_angle_config;
+
+    if (base_angle_config == 1) {
+        if (fabs(js_y) > last_base_angle_stick_val) {
+            robot->pid->base_angle_sp += js_y * 0.1f; // Map joystick Y to base angle setpoint
+            if (robot->pid->base_angle_sp > robot->pid->max_angle_offset)
+                robot->pid->base_angle_sp = robot->pid->max_angle_offset;
+            else if (robot->pid->base_angle_sp < -robot->pid->max_angle_offset)
+                robot->pid->base_angle_sp = -robot->pid->max_angle_offset;
+        }
+        last_base_angle_stick_val = fabs(js_y);
+    } else {
+        robot->pid->speed_sp = js_y * 3.14f; // Map joystick Y to speed setpoint
+    }
+}
+
 
 void PID_Init(pid_t *pid){
 	pid->Kp = -2.0f;
 	pid->Ki = -20.0f;
 	pid->Kd = -0.06f;
 
-	pid->base_angle_sp = -1.0f;
+	pid->base_angle_sp = 0.0f;
 
     pid->Kp_speed = 0.4f;
     pid->Ki_speed = 0.0f;
     pid->Kd_speed = 0.0008f;
 
-    pid->speed_sp = 0.0f;
+    pid->speed_sp = 0.0f; // Do not change, change via joystick
 
     pid->max_angle_offset = 2.0f;
     pid->angle_sp = 0.0f; // Do not change, it is only for CubeMonitor
@@ -138,7 +184,7 @@ void PID_Update(pid_t *pid) {
                             pid->Ki * pid->integral_error +
                             pid->Kd * derivative_error;
 
-    if (fabs(error) > 40.0f) {
+    if (fabs(error) > 30.0f) {
         set_speed(&stepper_l, 0.0f);
         set_speed(&stepper_r, 0.0f);
         PID_Reset(pid);
