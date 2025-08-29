@@ -111,7 +111,7 @@ void Robot_read_serial_msg(robot_t *robot, char *msg) {
     // Pulizia del buffer: rimuove eventuali spazi/residui
     char clean_msg[14] = {0}; // 13 caratteri + \0
     strncpy(clean_msg, msg, 13);
-    clean_msg[13] = '\0';
+    clean_msg[14] = '\0';
 
     // Parsing robusto con sscanf
     int parsed = sscanf(clean_msg, "%f;%f;%hhu", &js_x, &js_y, &base_angle_config);
@@ -136,6 +136,8 @@ void Robot_read_serial_msg(robot_t *robot, char *msg) {
                 robot->pid->base_angle_sp = -robot->pid->max_angle_offset;
         }
         last_base_angle_stick_val = fabs(js_y);
+
+
     } else {
         robot->pid->speed_sp = js_y * 3.14f; // Map joystick Y to speed setpoint
     }
