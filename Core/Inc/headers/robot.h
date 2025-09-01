@@ -11,6 +11,10 @@ typedef struct {
 	float base_angle_sp;
 	float integral_error, last_error;
 
+	float js_angle_offset_sp, js_angle_offset;
+
+	float js_multiplier, js_multiplier_sp;
+
 	float Kp_speed, Ki_speed, Kd_speed;
 	float speed_sp;
 	float integral_speed_err, last_speed_err;

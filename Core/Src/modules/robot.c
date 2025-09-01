@@ -15,6 +15,9 @@ imu_t imu;
 power_module_t power_module;
 pid_t pid;
 
+float max_angle_offset = 3.0f;
+float alpha = 0.05f;
+
 #define I2C_SCL_GPIO_Port   GPIOB
 #define I2C_SCL_Pin         GPIO_PIN_8
 #define I2C_SDA_GPIO_Port   GPIOB
@@ -103,6 +106,8 @@ void Robot_init(robot_t *robot) {
     robot->base_angle_config = 0;
 }
 
+
+
 void Robot_read_serial_msg(robot_t *robot, char *msg) {
     static float last_base_angle_stick_val = 0.0f;
     float js_x = 0.0f, js_y = 0.0f;
@@ -122,24 +127,41 @@ void Robot_read_serial_msg(robot_t *robot, char *msg) {
 
     // Gestione base angle mode
     if (base_angle_config != robot->base_angle_config) {
+        robot->base_angle_config = base_angle_config;
         last_base_angle_stick_val = 0.0f;
-        robot->pid->speed_sp = 0.0f; // Reset speed setpoint when changing mode
-    }
-    robot->base_angle_config = base_angle_config;
+        robot->pid->js_angle_offset_sp = 0.0f; // Reset joystick offset when switching modes
+        robot->pid->js_angle_offset = 0.0f;
+        robot->pid->js_multiplier_sp = 1.0f; // Reset speed multiplier when switching modes
+        robot->pid->js_multiplier = 1.0f;
 
-    if (base_angle_config == 1) {
-        if (fabs(js_y) > last_base_angle_stick_val) {
-            robot->pid->base_angle_sp += js_y * 0.1f; // Map joystick Y to base angle setpoint
+    	static display_data_t base_angle_data = {NULL, PRINT_FLOAT, FLOAT, DISPLAY_TYPE_FLOAT, 2};
+    	base_angle_data.data = &robot->pid->base_angle_sp;
+
+        if (base_angle_config) {
+			MAX72_Add_Data(&display, &base_angle_data);
+			MAX72_Stop_Changing_Data(&display, 0); // Stop changing data to always show base angle
+			while (display.data[display.current_index].data != &robot->pid->base_angle_sp) {
+				MAX72_Change_Data(&display, 1); // Force change to base angle display
+			}
+		} else {
+			MAX72_Remove_Data(&display, &base_angle_data);
+			MAX72_Resume_Changing_Data(&display, 1); // Resume changing data
+		}
+    }
+
+    if (base_angle_config) {
+    	robot->pid->js_multiplier_sp = 1.0f; // Fixed speed multiplier in base angle mode
+        if (fabs(js_y) > last_base_angle_stick_val && fabs(js_y) >= 0.1f) {
+            robot->pid->base_angle_sp += js_y * 0.02f; // Map joystick Y to base angle setpoint
             if (robot->pid->base_angle_sp > robot->pid->max_angle_offset)
                 robot->pid->base_angle_sp = robot->pid->max_angle_offset;
             else if (robot->pid->base_angle_sp < -robot->pid->max_angle_offset)
                 robot->pid->base_angle_sp = -robot->pid->max_angle_offset;
         }
         last_base_angle_stick_val = fabs(js_y);
-
-
     } else {
-        robot->pid->speed_sp = js_y * 3.14f; // Map joystick Y to speed setpoint
+    	robot->pid->js_multiplier_sp = js_x > 0.0f ? 1-js_x: -1-js_x; // 0.5 to 1.0 with sign
+        robot->pid->js_angle_offset_sp = js_y * max_angle_offset; // Map joystick Y to speed setpoint
     }
 }
 
@@ -149,7 +171,13 @@ void PID_Init(pid_t *pid){
 	pid->Ki = -20.0f;
 	pid->Kd = -0.06f;
 
-	pid->base_angle_sp = 0.0f;
+	pid->base_angle_sp = 0.75f;
+
+	pid->js_angle_offset_sp = 0.0f;
+	pid->js_angle_offset = 0.0f;
+
+	pid->js_multiplier = 1.0f;
+	pid->js_multiplier_sp = 1.0f;
 
     pid->Kp_speed = 0.4f;
     pid->Ki_speed = 0.0f;
@@ -175,7 +203,9 @@ void PID_Update(pid_t *pid) {
     if (angle_offset > pid->max_angle_offset) angle_offset = pid->max_angle_offset;
     else if (angle_offset < -pid->max_angle_offset) angle_offset = -pid->max_angle_offset;
 
-    pid->angle_sp = pid->base_angle_sp + angle_offset;
+    pid->js_angle_offset = alpha * pid->js_angle_offset_sp + (1.0f - alpha) * pid->js_angle_offset;
+
+    pid->angle_sp = pid->base_angle_sp + angle_offset + pid->js_angle_offset;
 
 	float error = pid->angle_sp - imu.angle;
 
@@ -186,13 +216,23 @@ void PID_Update(pid_t *pid) {
                             pid->Ki * pid->integral_error +
                             pid->Kd * derivative_error;
 
-    if (fabs(error) > 30.0f) {
+	pid->js_multiplier = alpha * pid->js_multiplier_sp + (1.0f - alpha) * pid->js_multiplier;
+
+    if (fabs(error) > 20.0f) {
         set_speed(&stepper_l, 0.0f);
         set_speed(&stepper_r, 0.0f);
         PID_Reset(pid);
     }else {
-        set_speed(&stepper_l, speed_setpoint);
-        set_speed(&stepper_r, speed_setpoint);
+		if(pid->js_multiplier > 0.9f || pid->js_multiplier < -0.9f){
+			set_speed(&stepper_l, speed_setpoint);
+			set_speed(&stepper_r, speed_setpoint);
+		} else if (pid->js_multiplier > 0.0f) {
+			set_speed(&stepper_l, speed_setpoint);
+			set_speed(&stepper_r, speed_setpoint * (pid->js_multiplier/2 + (fabs(pid->js_angle_offset) < 0.3f ? 0 : 0.5)));
+		} else {
+			set_speed(&stepper_l, speed_setpoint * (-pid->js_multiplier/2 + (fabs(pid->js_angle_offset) < 0.3f ? 0 : 0.5)));
+			set_speed(&stepper_r, speed_setpoint);
+		}
     }
 
     pid->last_speed_err = speed_err;
@@ -204,4 +244,9 @@ void PID_Reset(pid_t *pid) {
     pid->integral_speed_err = 0.0f;
     pid->last_error = 0.0f;
     pid->last_speed_err = 0.0f;
+
+    pid->js_angle_offset_sp = 0.0f;
+    pid->js_angle_offset = 0.0f;
+    pid->js_multiplier_sp = 1.0f;
+    pid->js_multiplier = 1.0f;
 }
