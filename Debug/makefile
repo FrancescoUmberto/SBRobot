@@ -77,8 +77,8 @@ all: main-build
 main-build: SBRobot.elf secondary-outputs
 
 # Tool invocations
-SBRobot.elf SBRobot.map: $(OBJS) $(USER_OBJS) /home/fra/Scrivania/SBRobot/STM32F446RETX_FLASH.ld makefile objects.list $(OPTIONAL_TOOL_DEPS)
-	arm-none-eabi-gcc -o "SBRobot.elf" @"objects.list" $(USER_OBJS) $(LIBS) -mcpu=cortex-m4 -T"/home/fra/Scrivania/SBRobot/STM32F446RETX_FLASH.ld" --specs=nosys.specs -Wl,-Map="SBRobot.map" -Wl,--gc-sections -static --specs=nano.specs -mfpu=fpv4-sp-d16 -mfloat-abi=hard -mthumb -u _printf_float -u _scanf_float -Wl,--start-group -lc -lm -Wl,--end-group
+SBRobot.elf SBRobot.map: $(OBJS) $(USER_OBJS) /Users/umbertofrancescocarolini/Desktop/SBRobot/STM32F446RETX_FLASH.ld makefile objects.list $(OPTIONAL_TOOL_DEPS)
+	arm-none-eabi-gcc -o "SBRobot.elf" @"objects.list" $(USER_OBJS) $(LIBS) -mcpu=cortex-m4 -T"/Users/umbertofrancescocarolini/Desktop/SBRobot/STM32F446RETX_FLASH.ld" --specs=nosys.specs -Wl,-Map="SBRobot.map" -Wl,--gc-sections -static --specs=nano.specs -mfpu=fpv4-sp-d16 -mfloat-abi=hard -mthumb -u _printf_float -u _scanf_float -Wl,--start-group -lc -lm -Wl,--end-group
 	@echo 'Finished building target: $@'
 	@echo ' '
 

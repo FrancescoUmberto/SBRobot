@@ -1,7 +1,11 @@
 #include "headers/encoder.h"
-#include < stdlib.h>
-#include < stdio.h>
-#include < math.h>
+#include <stdlib.h>
+#include <stdio.h>
+#include <math.h>
+
+float SAMPLING_PERIOD;
+uint32_t HCLK;
+
 
 // aggiunto per powf float SAMPLING_PERIOD;
 // seconds uint32_t HCLK;
