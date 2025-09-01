@@ -26,5 +26,20 @@ Core/Src \
 Core/Src/modules \
 Core/Src/modules/display \
 Core/Startup \
+Drivers/CMSIS_DSP/Source/BasicMathFunctions \
+Drivers/CMSIS_DSP/Source/BayesFunctions \
+Drivers/CMSIS_DSP/Source/CommonTables \
+Drivers/CMSIS_DSP/Source/ComplexMathFunctions \
+Drivers/CMSIS_DSP/Source/ControllerFunctions \
+Drivers/CMSIS_DSP/Source/DistanceFunctions \
+Drivers/CMSIS_DSP/Source/FastMathFunctions \
+Drivers/CMSIS_DSP/Source/FilteringFunctions \
+Drivers/CMSIS_DSP/Source/InterpolationFunctions \
+Drivers/CMSIS_DSP/Source/MatrixFunctions \
+Drivers/CMSIS_DSP/Source/QuaternionMathFunctions \
+Drivers/CMSIS_DSP/Source/SVMFunctions \
+Drivers/CMSIS_DSP/Source/StatisticsFunctions \
+Drivers/CMSIS_DSP/Source/SupportFunctions \
+Drivers/CMSIS_DSP/Source/TransformFunctions \
 Drivers/STM32F4xx_HAL_Driver/Src \
 
