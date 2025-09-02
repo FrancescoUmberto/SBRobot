@@ -74,10 +74,15 @@ void Robot_init(robot_t *robot) {
 	HAL_TIM_Base_Start_IT(&htim6);						// Display timer (0.1MHz)
 	HAL_TIM_Base_Start_IT(&htim7);						// Timeline
 	HAL_TIM_Base_Start_IT(&htim10);						// Stepper timer
-	HAL_TIM_Encoder_Start(&htim3, TIM_CHANNEL_ALL);		// Encoder right
-	HAL_TIM_Encoder_Start(&htim4, TIM_CHANNEL_ALL);		// Encoder left
+	HAL_TIM_Encoder_Start_IT(&htim3, TIM_CHANNEL_ALL);		// Encoder right
+	HAL_TIM_OC_Start_IT(&htim3, TIM_CHANNEL_3);
+	HAL_TIM_Encoder_Start_IT(&htim4, TIM_CHANNEL_ALL);		// Encoder left
+	HAL_TIM_OC_Start_IT(&htim4, TIM_CHANNEL_3);
 	HAL_TIM_PWM_Start(&htim2,TIM_CHANNEL_2);			// Stepper left
 	HAL_TIM_PWM_Start(&htim5,TIM_CHANNEL_1);			// Stepper right
+
+	HAL_TIM_Base_Start(&htim8);						// Virtual timer overflow timer
+	HAL_TIM_Base_Start(&htim1);						// Microsecond timer
 
 	MAX72_init(&display);
 
@@ -167,11 +172,11 @@ void Robot_read_serial_msg(robot_t *robot, char *msg) {
 
 
 void PID_Init(pid_t *pid){
-	pid->Kp = -2.0f;
-	pid->Ki = -20.0f;
-	pid->Kd = -0.06f;
+	pid->Kp = -1.7f;
+	pid->Ki = -40.0f;
+	pid->Kd = -0.003f;
 
-	pid->base_angle_sp = 0.75f;
+	pid->base_angle_sp = -0.2f;
 
 	pid->js_angle_offset_sp = 0.0f;
 	pid->js_angle_offset = 0.0f;
@@ -179,9 +184,9 @@ void PID_Init(pid_t *pid){
 	pid->js_multiplier = 1.0f;
 	pid->js_multiplier_sp = 1.0f;
 
-    pid->Kp_speed = 0.4f;
+    pid->Kp_speed = 1.4f;
     pid->Ki_speed = 0.0f;
-    pid->Kd_speed = 0.0008f;
+    pid->Kd_speed = 0.0015f;
 
     pid->speed_sp = 0.0f; // Do not change, change via joystick
 
@@ -218,7 +223,7 @@ void PID_Update(pid_t *pid) {
 
 	pid->js_multiplier = alpha * pid->js_multiplier_sp + (1.0f - alpha) * pid->js_multiplier;
 
-    if (fabs(error) > 20.0f) {
+    if (fabs(error) > 30.0f) {
         set_speed(&stepper_l, 0.0f);
         set_speed(&stepper_r, 0.0f);
         PID_Reset(pid);

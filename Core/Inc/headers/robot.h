@@ -3,7 +3,6 @@
 #include "stepper.h"
 #include "display.h"
 #include "power_module.h"
-#include "controller.h"
 #include "stm32f4xx_hal.h"
 
 typedef struct {

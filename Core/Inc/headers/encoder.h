@@ -4,7 +4,7 @@
 #define RCF 0.00076699 // Radians Conversion Factor	2*pi/PPR		PPR=CPR*RES		2048*4=8192
 #define WHEEL_RADIUS 0.0625 // meters
 
-#define N_SAMPLES 10
+#define N_SAMPLES 6
 #define POLY_ORDER 2
 #define N_COEFF (POLY_ORDER + 1)
 
@@ -26,6 +26,8 @@ typedef struct{
 void Encoder_init(encoder_t *encoder, TIM_HandleTypeDef *em_tim, TIM_HandleTypeDef *s_tim, int8_t direction_invert);
 
 void Encoder_read(encoder_t *encoder);
+
+void Encoder_event(encoder_t *encoder);
 
 extern float SAMPLING_PERIOD;
 extern uint32_t HCLK;

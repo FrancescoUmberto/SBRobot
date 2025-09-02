@@ -57,7 +57,6 @@ static uint8_t tim6_update_cnt = 0;
 static uint8_t IMU_Rx_Cplt = 0; // Flag to indicate that IMU data has been received
 
 uint8_t rx_byte;
-static uint8_t rx_index = 0;
 static char js_buffer[15];
 static uint8_t js_msg_ready = 0;
 
@@ -166,7 +165,8 @@ int main(void)
   MX_I2C1_Init();
   MX_TIM10_Init();
   MX_USART6_UART_Init();
-  MX_TIM11_Init();
+  MX_TIM1_Init();
+  MX_TIM8_Init();
   /* USER CODE BEGIN 2 */
 
   /* USER CODE END 2 */
@@ -180,7 +180,7 @@ int main(void)
 //  display_data_t data = {str, PRINT_SCROLL, NO_SETTINGS, DISPLAY_TYPE_STRING, 0};
 //  MAX72_Add_Data(&display, &data);
 
-//  display_data_t data2 = {&encoder_l.speed, PRINT_FLOAT, MINIDIGITS, DISPLAY_TYPE_FLOAT, 3};
+//  display_data_t data2 = {&encoder_r.speed, PRINT_FLOAT, MINIDIGITS, DISPLAY_TYPE_FLOAT, 3};
 //  MAX72_Add_Data(&display, &data2);
 
   display_data_t data3 = {&imu.angle, PRINT_FLOAT, FLOAT, DISPLAY_TYPE_FLOAT, 2};
@@ -221,7 +221,7 @@ int main(void)
 //		      // Azzeriamo anche ErrorCode nella struct
 //		      huart6.ErrorCode = HAL_UART_ERROR_NONE;
 //		  }
-		  Robot_read_serial_msg(&robot, js_buffer);
+//		  Robot_read_serial_msg(&robot, js_buffer);
 	  }
 
 	  static uint8_t last_cnt = 255;
@@ -315,6 +315,19 @@ void HAL_TIM_PeriodElapsedCallback(TIM_HandleTypeDef *htim){
 	} else if (htim->Instance == TIM10){
 		// Read from IMU
 		IMU_ReadData(&imu);
+	}
+}
+
+void HAL_TIM_OC_DelayElapsedCallback(TIM_HandleTypeDef *htim)
+{
+    if (htim->Instance == TIM3 && htim->Channel == HAL_TIM_ACTIVE_CHANNEL_3)
+    {
+    	Encoder_event(&encoder_l);
+        __HAL_TIM_SET_COMPARE(htim, TIM_CHANNEL_3, !htim->Instance->CCR3);  // per ogni tick
+    } else if (htim->Instance == TIM4 && htim->Channel == HAL_TIM_ACTIVE_CHANNEL_3)
+	{
+    	Encoder_event(&encoder_r);
+		__HAL_TIM_SET_COMPARE(htim, TIM_CHANNEL_3, !htim->Instance->CCR3);  // per ogni tick
 	}
 }
 

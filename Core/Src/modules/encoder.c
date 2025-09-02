@@ -6,6 +6,14 @@
 float SAMPLING_PERIOD;
 uint32_t HCLK;
 
+static uint32_t get_virtual_timer_32bit(void){
+    uint16_t high, low;
+
+    high = __HAL_TIM_GET_COUNTER(&htim8);
+    low  = __HAL_TIM_GET_COUNTER(&htim1);
+
+    return ((uint32_t)high << 16) | low;
+}
 
 // aggiunto per powf float SAMPLING_PERIOD;
 // seconds uint32_t HCLK;
@@ -32,12 +40,14 @@ static void compute_polynomial(encoder_t *encoder)
 	float32_t ATA_inv_AT_d[N_COEFF * N_SAMPLES];
 	float32_t B_d[N_SAMPLES];
 	float32_t P_d[N_COEFF]; // usa l'elemento più vecchio nel buffer come riferimento 
+
 	uint8_t start_idx = encoder->vec_index; // 
 	encoder->t_ref = encoder->timestamps[start_idx]; // Reference time for normalization 
+
 	// riempi T e B per TUTTI i N_SAMPLES campioni (coerente con A: N_SAMPLES x N_COEFF) 
 	for (uint8_t i = 0; i < N_SAMPLES; i++) { 
 		uint8_t idx = (start_idx + i) % N_SAMPLES; 
-		t_normalized[i] = (encoder->timestamps[idx] - encoder->t_ref)/1000.0f; // s 
+		t_normalized[i] = (encoder->timestamps[idx] - encoder->t_ref)/1000000.0f; // s
 		B_d[i] = encoder->positions[idx]; 
 	} 
 	arm_matrix_instance_f32 A, AT, ATA, ATA_inv, ATA_inv_AT, P, B; 
@@ -62,27 +72,30 @@ static void compute_polynomial(encoder_t *encoder)
 		for(uint8_t i=0;i<N_COEFF;i++){ 
 			encoder->polynomial[i] = 0.0f; // Reset to zero on error 
 		} 
-		encoder->t_ref = HAL_GetTick(); // Reset reference time on error 
+		encoder->t_ref = get_virtual_timer_32bit(); // Reset reference time on error
 	} 
 } 
 
 static void compute_displacement(encoder_t *encoder){ 
 	// encoder->old_displacement = encoder->displacement; // Save old displacement for speed calculation 
 	encoder->displacement = 0.0f; 
-	float current_time = (HAL_GetTick() - encoder->t_ref)/1000.0f; // Time since reference 
+	float current_time = (get_virtual_timer_32bit() - encoder->t_ref)/1000000.0f; // Time since reference
 	for(int i = 0; i < N_COEFF; i++){ 
 		encoder->displacement += encoder->polynomial[i] * powf(current_time, POLY_ORDER - i); 
 	} 
 } 
 
 static void compute_speed(encoder_t *encoder){ 
-	encoder->speed = (encoder->position*RCF - encoder->old_displacement) / SAMPLING_PERIOD; // Speed in radians per second 
-	encoder->old_displacement = encoder->position * RCF; // 
-	// encoder->speed = 0.0f; // 
-	// float current_time = (HAL_GetTick() - encoder->t_ref)/1000.0f; // Time since reference 
-	// for(uint8_t i = 0; i < POLY_ORDER; i++){ 
-	// 	encoder->speed += (POLY_ORDER - i) *encoder->polynomial[i] * powf(current_time, POLY_ORDER - i - 1); 
-	// } 
+//	encoder->speed = (encoder->position*RCF - encoder->old_displacement) / SAMPLING_PERIOD; // Speed in radians per second
+//	encoder->old_displacement = encoder->position * RCF; //
+	float old_speed = encoder->speed;
+	 encoder->speed = 0.0f; //
+	 float current_time = (get_virtual_timer_32bit() - encoder->t_ref)/1000000.0f; // Time since reference
+	 for(uint8_t i = 0; i < POLY_ORDER; i++){
+	 	encoder->speed += (POLY_ORDER - i) *encoder->polynomial[i] * powf(current_time, POLY_ORDER - i - 1);
+	 }
+	 // Low-pass filter
+	 encoder->speed = 0.05f * encoder->speed + 0.95f * old_speed;
 } 
 
 void Encoder_init(encoder_t *encoder, TIM_HandleTypeDef *em_tim, TIM_HandleTypeDef *s_tim, int8_t direction_invert){ 
@@ -96,7 +109,7 @@ void Encoder_init(encoder_t *encoder, TIM_HandleTypeDef *em_tim, TIM_HandleTypeD
 	encoder->tim->CCR3 = 1; 
 	encoder->direction_invert = (direction_invert == 0) ? 1 : (direction_invert > 0 ? 1 : -1); 
 	encoder->speed = 0; 
-	uint32_t current_time = HAL_GetTick(); 
+	uint32_t current_time = get_virtual_timer_32bit();
 	for (uint8_t i = 0; i < N_SAMPLES; i++) { 
 		encoder->timestamps[i] = current_time + i; 
 		encoder->positions[i] = 0; 
@@ -120,7 +133,7 @@ void Encoder_read(encoder_t *encoder){
 void Encoder_event(encoder_t *encoder){ 
 	encoder->direction = (encoder->tim->CR1 & TIM_CR1_DIR_Msk) >> TIM_CR1_DIR_Pos; 
 	encoder->position += (encoder->direction ? -1 : 1) * encoder->direction_invert; 
-	uint32_t current_time = HAL_GetTick(); // Store current time 
+	uint32_t current_time = get_virtual_timer_32bit(); // Store current time
 	// calcolo robusto dell'indice precedente nel buffer circolare 
 	uint8_t prev = (encoder->vec_index + N_SAMPLES - 1) % N_SAMPLES; 
 	if(encoder->timestamps[prev] == current_time){ 

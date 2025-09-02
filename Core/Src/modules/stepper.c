@@ -20,6 +20,7 @@ void speed_control(stepper_t *stepper){
 	uint8_t sign = stepper->frequency > 0;
 
 	freq = stepper->frequency; // Store frequency for debugging
+//	stepper->frequency = 255;
 
 	if (fabs(stepper->frequency) > MAX_CTRL_FREQUENCY) {
 		stepper->frequency = MAX_CTRL_FREQUENCY * (sign?1:-1); // Limit frequency to 9000 Hz
