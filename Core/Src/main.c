@@ -61,6 +61,7 @@ static char js_buffer[15];
 static uint8_t js_msg_ready = 0;
 
 robot_t robot;
+
 /* USER CODE END PV */
 
 /* Private function prototypes -----------------------------------------------*/
@@ -190,6 +191,13 @@ int main(void)
 //  MAX72_Add_Data(&display, &data4);
 
   HAL_UART_Receive_DMA(&huart6, (uint8_t*)js_buffer, 14);
+	pid.active ^= 1;
+	if (pid.active) {
+		PID_Reset(&pid);
+	} else {
+		set_speed(&stepper_l, 0);
+		set_speed(&stepper_r, 0);
+	}
   while (1)
   {
     /* USER CODE END WHILE */
@@ -221,7 +229,7 @@ int main(void)
 //		      // Azzeriamo anche ErrorCode nella struct
 //		      huart6.ErrorCode = HAL_UART_ERROR_NONE;
 //		  }
-//		  Robot_read_serial_msg(&robot, js_buffer);
+		    // Robot_read_serial_msg(&robot, js_buffer);
 	  }
 
 	  static uint8_t last_cnt = 255;
@@ -306,10 +314,9 @@ void HAL_TIM_PeriodElapsedCallback(TIM_HandleTypeDef *htim){
 			tim6_update_cnt = 0;
 		}
 	} else if (htim->Instance == TIM7) {
-    if (pid.active){
-      PID_Update(&pid);
-    }
-
+		if (pid.active){
+		  PID_Update(&pid);
+		}
 		speed_control(&stepper_r);
 		speed_control(&stepper_l);
 	} else if (htim->Instance == TIM10){
@@ -334,7 +341,7 @@ void HAL_TIM_OC_DelayElapsedCallback(TIM_HandleTypeDef *htim)
 void HAL_GPIO_EXTI_Callback(uint16_t GPIO_Pin)
 {
   if(GPIO_Pin == GPIO_PIN_5) {
-    on_click();
+//    on_click();
   }
 }
 
@@ -353,10 +360,11 @@ void HAL_UART_RxCpltCallback(UART_HandleTypeDef *huart) {
 	}
 }
 
- int __io_putchar(int ch){
- 	ITM_SendChar(ch);
- 	return ch;
- }
+int __io_putchar(int ch){
+	ITM_SendChar(ch);
+	return ch;
+}
+
 /* USER CODE END 4 */
 
 /**

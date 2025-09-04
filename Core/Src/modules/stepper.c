@@ -17,6 +17,8 @@ void speed_control(stepper_t *stepper){
 	stepper->frequency += e * AEP + stepper->last_error * LEP; // PI controller
 	stepper->last_error = e;
 
+
+
 	uint8_t sign = stepper->frequency > 0;
 
 	freq = stepper->frequency; // Store frequency for debugging

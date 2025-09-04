@@ -77,7 +77,7 @@ static void compute_polynomial(encoder_t *encoder)
 } 
 
 static void compute_displacement(encoder_t *encoder){ 
-	// encoder->old_displacement = encoder->displacement; // Save old displacement for speed calculation 
+//	encoder->old_displacement = encoder->displacement; // Save old displacement for speed calculation
 	encoder->displacement = 0.0f; 
 	float current_time = (get_virtual_timer_32bit() - encoder->t_ref)/1000000.0f; // Time since reference
 	for(int i = 0; i < N_COEFF; i++){ 
@@ -86,16 +86,18 @@ static void compute_displacement(encoder_t *encoder){
 } 
 
 static void compute_speed(encoder_t *encoder){ 
-//	encoder->speed = (encoder->position*RCF - encoder->old_displacement) / SAMPLING_PERIOD; // Speed in radians per second
-//	encoder->old_displacement = encoder->position * RCF; //
-	float old_speed = encoder->speed;
-	 encoder->speed = 0.0f; //
-	 float current_time = (get_virtual_timer_32bit() - encoder->t_ref)/1000000.0f; // Time since reference
-	 for(uint8_t i = 0; i < POLY_ORDER; i++){
-	 	encoder->speed += (POLY_ORDER - i) *encoder->polynomial[i] * powf(current_time, POLY_ORDER - i - 1);
-	 }
-	 // Low-pass filter
-	 encoder->speed = 0.05f * encoder->speed + 0.95f * old_speed;
+	encoder->speed = (encoder->position*RCF - encoder->old_displacement) / SAMPLING_PERIOD; // Speed in radians per second
+	encoder->old_displacement = encoder->position * RCF;
+//	encoder->speed = encoder->speed * 0.9 + 0.1 * (encoder->displacement - encoder->old_displacement) / SAMPLING_PERIOD; // Speed in radians per second
+	// encoder->old_displacement = encoder->position * RCF; //
+//	float old_speed = encoder->speed;
+//	 encoder->speed = 0.0f; //
+//	 float current_time = (get_virtual_timer_32bit() - encoder->t_ref)/1000000.0f; // Time since reference
+//	 for(uint8_t i = 0; i < POLY_ORDER; i++){
+//	 	encoder->speed += (POLY_ORDER - i) *encoder->polynomial[i] * powf(current_time, POLY_ORDER - i - 1);
+//	 }
+//	 // Low-pass filter
+//	 encoder->speed = 0.05f * encoder->speed + 0.95f * old_speed;
 } 
 
 void Encoder_init(encoder_t *encoder, TIM_HandleTypeDef *em_tim, TIM_HandleTypeDef *s_tim, int8_t direction_invert){ 
