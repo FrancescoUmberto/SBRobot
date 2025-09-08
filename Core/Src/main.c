@@ -229,7 +229,7 @@ int main(void)
 //		      // Azzeriamo anche ErrorCode nella struct
 //		      huart6.ErrorCode = HAL_UART_ERROR_NONE;
 //		  }
-		    // Robot_read_serial_msg(&robot, js_buffer);
+		     Robot_read_serial_msg(&robot, js_buffer);
 	  }
 
 	  static uint8_t last_cnt = 255;

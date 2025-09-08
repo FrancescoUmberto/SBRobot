@@ -51,3 +51,5 @@ extern pid_t pid;
 
 void Robot_init(robot_t *robot);
 void Robot_read_serial_msg(robot_t *robot, char *msg);
+
+void Save_BaseAngle(pid_t *pid);

@@ -4,6 +4,9 @@
 #include <math.h>
 #include <string.h>
 #include <stdio.h>
+#include "stm32f4xx_hal.h"
+
+#define FLASH_START_ADDR   0x08060000
 
 encoder_t encoder_r;
 stepper_t stepper_r;
@@ -15,7 +18,7 @@ imu_t imu;
 power_module_t power_module;
 pid_t pid;
 
-float max_angle_offset = 3.0f;
+float max_angle_offset = 2.5f;
 float alpha = 0.05f;
 float js_x = 0.0f, js_y = 0.0f;
 
@@ -116,6 +119,46 @@ void Robot_init(robot_t *robot)
     robot->base_angle_config = 0;
 }
 
+static float Load_BaseAngleOrDefault(void) {
+    uint32_t raw = *(uint32_t*)FLASH_START_ADDR;
+
+    // se il valore non è mai stato scritto, Flash contiene 0xFFFFFFFF
+    if(raw == 0xFFFFFFFF) {
+        return 1.0f; // default
+    } else {
+        float angle;
+        memcpy(&angle, &raw, sizeof(float));
+        return angle;
+    }
+}
+
+void Save_BaseAngle(pid_t *pid) {
+    HAL_FLASH_Unlock();
+
+    // Cancella la pagina prima di scrivere
+    FLASH_EraseInitTypeDef EraseInitStruct;
+    uint32_t SectorError;
+
+    EraseInitStruct.TypeErase     = FLASH_TYPEERASE_SECTORS;
+    EraseInitStruct.VoltageRange  = FLASH_VOLTAGE_RANGE_3;
+    EraseInitStruct.Sector        = FLASH_SECTOR_7;
+    EraseInitStruct.NbSectors     = 1;
+
+    if (HAL_FLASHEx_Erase(&EraseInitStruct, &SectorError) != HAL_OK) {
+        // gestione errore
+    }
+
+    // Scrivi il float reinterpretando i bit come uint32_t
+    uint32_t data;
+    memcpy(&data, &pid->base_angle_sp, sizeof(float));
+
+    if (HAL_FLASH_Program(FLASH_TYPEPROGRAM_WORD, FLASH_START_ADDR, data) != HAL_OK) {
+        // gestione errore
+    }
+
+    HAL_FLASH_Lock();
+}
+
 void Robot_read_serial_msg(robot_t *robot, char *msg)
 {
     static float last_base_angle_stick_val = 0.0f;
@@ -179,17 +222,17 @@ void Robot_read_serial_msg(robot_t *robot, char *msg)
     else
     {
         robot->pid->js_multiplier_sp = js_x > 0.0f ? 1 - js_x : -1 - js_x; // 0.5 to 1.0 with sign
-        robot->pid->js_angle_offset_sp = js_y * max_angle_offset;          // Map joystick Y to speed setpoint
+        robot->pid->js_angle_offset_sp = js_y * ((js_y > 0)/4.0f + 1.0f ) * max_angle_offset;          // Map joystick Y to speed setpoint
     }
 }
 
 void PID_Init(pid_t *pid)
 {
-    pid->Kp = -1.0f;
-    pid->Ki = -5.5f;
-    pid->Kd = -0.003f;
+    pid->Kp = -0.85f;
+    pid->Ki = -4.8f;
+    pid->Kd = -0.004f;
 
-    pid->base_angle_sp = -0.5f;
+    pid->base_angle_sp = Load_BaseAngleOrDefault();
 
     pid->js_angle_offset_sp = 0.0f;
     pid->js_angle_offset = 0.0f;
@@ -197,9 +240,9 @@ void PID_Init(pid_t *pid)
     pid->js_multiplier = 1.0f;
     pid->js_multiplier_sp = 1.0f;
 
-    pid->Kp_speed = 0.0f;
+    pid->Kp_speed = 0.73f;
 	pid->Ki_speed = 0.0f;
-	pid->Kd_speed = 0.0f;
+	pid->Kd_speed = 0.0045f;
 
     pid->speed_sp = 0.0f; // Do not change, change via joystick
 
@@ -232,41 +275,7 @@ static void PID_Angle_Update(pid_t *pid)
     pid->last_speed_err = speed_err;
 }
 
-static void PID_Speed_Update(pid_t *pid)
-{
-    float error = pid->angle_sp - imu.angle;
-
-    if (fabs(error) > 30.0f)
-    {
-        set_speed(&stepper_l, 0.0f);
-        set_speed(&stepper_r, 0.0f);
-        PID_Reset(pid);
-    }
-    else
-    {
-        pid->integral_error += error * SAMPLING_PERIOD;
-        float derivative_error = (error - pid->last_error) / SAMPLING_PERIOD;
-
-        float speed_setpoint = pid->Kp * error +
-                               pid->Ki * pid->integral_error +
-                               pid->Kd * derivative_error;
-
-        pid->js_multiplier = alpha * pid->js_multiplier_sp + (1.0f - alpha) * pid->js_multiplier;
-        //		if(pid->js_multiplier > 0.9f || pid->js_multiplier < -0.9f){
-        set_speed(&stepper_l, speed_setpoint);
-        set_speed(&stepper_r, speed_setpoint);
-        //		} else if (pid->js_multiplier > 0.0f) {
-        //			set_speed(&stepper_l, speed_setpoint);
-        //			set_speed(&stepper_r, speed_setpoint * (pid->js_multiplier/2 + (fabs(pid->js_angle_offset) < 0.3f ? 0 : 0.5)));
-        //		} else {
-        //			set_speed(&stepper_l, speed_setpoint * (-pid->js_multiplier/2 + (fabs(pid->js_angle_offset) < 0.3f ? 0 : 0.5)));
-        //			set_speed(&stepper_r, speed_setpoint);
-        //		}
-    }
-    pid->last_error = error;
-}
-
-static void Differential_Drive_Kinematics(pid_t *pid)
+static void Differential_Drive_Kinematics(pid_t *pid, float speed_setpoint)
 {
     /*
     Differential Drive Kinematics
@@ -287,61 +296,42 @@ static void Differential_Drive_Kinematics(pid_t *pid)
             [cos(omega*dt), -sin(omega*dt), 0; sin(omega*dt), cos(omega*dt), 0; 0, 0, 1] *
             [x - ICC_x, y - ICC_y, theta] + [ICC_x, ICC_y, omega*dt]
     */
-	float error = pid->angle_sp - imu.angle;
 
-	if (fabs(error) > 30.0f)
-	{
-		set_speed(&stepper_l, 0.0f);
-		set_speed(&stepper_r, 0.0f);
-		PID_Reset(pid);
+	float l = WHEEL_AXIS_MIDPOINT;
+	float dt = SAMPLING_PERIOD;
+
+	float V = js_y * pid->js_multiplier;
+	float omega = -js_x * 0.05f;
+
+	float V_r, V_l;
+
+	if (fabsf(omega) < 1e-6f) {
+		// Solo avanzamento
+		V_r = V;
+		V_l = V;
 	}
-	else
-	{
-		pid->integral_error += error * SAMPLING_PERIOD;
-		float derivative_error = (error - pid->last_error) / SAMPLING_PERIOD;
-
-		float speed_setpoint = pid->Kp * error +
-							   pid->Ki * pid->integral_error +
-							   pid->Kd * derivative_error;
-
-		pid->js_multiplier = alpha * pid->js_multiplier_sp + (1.0f - alpha) * pid->js_multiplier;
-
-
-		float l = WHEEL_AXIS_MIDPOINT;
-		float dt = SAMPLING_PERIOD;
-
-		float V = js_y * pid->js_multiplier;
-		float omega = js_x * pid->max_angle_offset;
-
-		float V_r, V_l;
-
-		if (fabsf(omega) < 1e-6f) {
-		    // Solo avanzamento
-		    V_r = V;
-		    V_l = V;
+	else if (fabsf(V) < 1e-6f) {
+		// Solo rotazione
+		V_r =  omega * (l / 2.0f);
+		V_l = -omega * (l / 2.0f);
+	}
+	else {
+		// Avanzamento + rotazione
+		float R = V / omega;
+		// controllo che R non sia assurdo
+		if (fabsf(R) > 1e6f || isnan(R) || isinf(R)) {
+			V_r = V;
+			V_l = V;
+		} else {
+			V_r = omega * (R + l / 2.0f);
+			V_l = omega * (R - l / 2.0f);
 		}
-		else if (fabsf(V) < 1e-6f) {
-		    // Solo rotazione
-		    V_r =  omega * (l / 2.0f);
-		    V_l = -omega * (l / 2.0f);
-		}
-		else {
-		    // Avanzamento + rotazione
-		    float R = V / omega;
-		    // controllo che R non sia assurdo
-		    if (fabsf(R) > 1e6f || isnan(R) || isinf(R)) {
-		        V_r = V;
-		        V_l = V;
-		    } else {
-		        V_r = omega * (R + l / 2.0f);
-		        V_l = omega * (R - l / 2.0f);
-		    }
-		}
+	}
 
 
-		float x = encoder_r.displacement;
-		float y = encoder_l.displacement;
-		float theta = imu.angle;
+//	float x = encoder_r.displacement;
+//	float y = encoder_l.displacement;
+//	float theta = imu.angle;
 
 //		float ICC_x = x - R * sinf(theta);
 //		float ICC_y = y + R * cosf(theta);
@@ -349,31 +339,57 @@ static void Differential_Drive_Kinematics(pid_t *pid)
 //		float cos_omega_dt = cosf(omega * dt);
 //		float sin_omega_dt = sinf(omega * dt);
 
-		float V_l_cmd = V_l + speed_setpoint;
-		float V_r_cmd = V_r + speed_setpoint;
-		// protezione contro valori non validi
-		if (isnan(V_l_cmd) || isinf(V_l_cmd)) V_l_cmd = 0.0f;
-		if (isnan(V_r_cmd) || isinf(V_r_cmd)) V_r_cmd = 0.0f;
+	float V_l_cmd = V_l + speed_setpoint;
+	float V_r_cmd = V_r + speed_setpoint;
+	// protezione contro valori non validi
+	if (isnan(V_l_cmd) || isinf(V_l_cmd)) V_l_cmd = 0.0f;
+	if (isnan(V_r_cmd) || isinf(V_r_cmd)) V_r_cmd = 0.0f;
 
-		// saturazione con limite hardware
-		if (V_l_cmd >  MAX_CTRL_FREQUENCY) V_l_cmd =  MAX_CTRL_FREQUENCY;
-		if (V_l_cmd < -MAX_CTRL_FREQUENCY) V_l_cmd = -MAX_CTRL_FREQUENCY;
-		if (V_r_cmd >  MAX_CTRL_FREQUENCY) V_r_cmd =  MAX_CTRL_FREQUENCY;
-		if (V_r_cmd < -MAX_CTRL_FREQUENCY) V_r_cmd = -MAX_CTRL_FREQUENCY;
+	// saturazione con limite hardware
+	if (V_l_cmd >  MAX_CTRL_FREQUENCY) V_l_cmd =  MAX_CTRL_FREQUENCY;
+	if (V_l_cmd < -MAX_CTRL_FREQUENCY) V_l_cmd = -MAX_CTRL_FREQUENCY;
+	if (V_r_cmd >  MAX_CTRL_FREQUENCY) V_r_cmd =  MAX_CTRL_FREQUENCY;
+	if (V_r_cmd < -MAX_CTRL_FREQUENCY) V_r_cmd = -MAX_CTRL_FREQUENCY;
 
-		set_speed(&stepper_l, V_l_cmd);
-		set_speed(&stepper_r, V_r_cmd);
+	set_speed(&stepper_l, V_l_cmd);
+	set_speed(&stepper_r, V_r_cmd);
+}
 
+static void PID_Speed_Update(pid_t *pid)
+{
+    float error = pid->angle_sp - imu.angle;
 
-	}
+    if (fabs(error) > 30.0f)
+    {
+        set_speed(&stepper_l, 0.0f);
+        set_speed(&stepper_r, 0.0f);
+        PID_Reset(pid);
+    }
+    else
+    {
+        pid->integral_error += error * SAMPLING_PERIOD;
+        float derivative_error = (error - pid->last_error) / SAMPLING_PERIOD;
 
+        float speed_setpoint = pid->Kp * error +
+                               pid->Ki * pid->integral_error +
+                               pid->Kd * derivative_error;
+
+        pid->js_multiplier = alpha * pid->js_multiplier_sp + (1.0f - alpha) * pid->js_multiplier;
+
+		if (pid->js_multiplier > 0.9f) {
+			set_speed(&stepper_l, speed_setpoint);
+			set_speed(&stepper_r, speed_setpoint);
+		} else {
+			Differential_Drive_Kinematics(pid, speed_setpoint);
+		}
+    }
+    pid->last_error = error;
 }
 
 void PID_Update(pid_t *pid)
 {
     PID_Angle_Update(pid);
-//     PID_Speed_Update(pid);
-    Differential_Drive_Kinematics(pid);
+    PID_Speed_Update(pid);
 }
 
 void PID_Reset(pid_t *pid)

@@ -29,6 +29,7 @@ void on_click(){
 		} else {
 			set_speed(&stepper_l, 0);
 			set_speed(&stepper_r, 0);
+			Save_BaseAngle(&pid);
 		}
 	}
 }
