@@ -18,7 +18,6 @@ imu_t imu;
 power_module_t power_module;
 pid_t pid;
 
-float max_angle_offset = 2.5f;
 float alpha = 0.05f;
 float js_x = 0.0f, js_y = 0.0f;
 
@@ -115,8 +114,6 @@ void Robot_init(robot_t *robot)
 
     PID_Init(&pid);
     robot->pid = &pid;
-
-    robot->base_angle_config = 0;
 }
 
 static float Load_BaseAngleOrDefault(void) {
@@ -161,13 +158,14 @@ void Save_BaseAngle(pid_t *pid) {
 
 void Robot_read_serial_msg(robot_t *robot, char *msg)
 {
+	pid_t *pid = robot->pid;
     static float last_base_angle_stick_val = 0.0f;
     uint8_t base_angle_config = 0;
 
     // Pulizia del buffer: rimuove eventuali spazi/residui
     char clean_msg[14] = {0}; // 13 caratteri + \0
     strncpy(clean_msg, msg, 13);
-    clean_msg[14] = '\0';
+    clean_msg[13] = '\0';
 
     // Parsing robusto con sscanf
     int parsed = sscanf(clean_msg, "%f;%f;%hhu", &js_x, &js_y, &base_angle_config);
@@ -178,23 +176,23 @@ void Robot_read_serial_msg(robot_t *robot, char *msg)
     }
 
     // Gestione base angle mode
-    if (base_angle_config != robot->base_angle_config)
+    if (base_angle_config != pid->base_angle_config)
     {
-        robot->base_angle_config = base_angle_config;
+        pid->base_angle_config = base_angle_config;
         last_base_angle_stick_val = 0.0f;
-        robot->pid->js_angle_offset_sp = 0.0f; // Reset joystick offset when switching modes
-        robot->pid->js_angle_offset = 0.0f;
-        robot->pid->js_multiplier_sp = 1.0f; // Reset speed multiplier when switching modes
-        robot->pid->js_multiplier = 1.0f;
+        pid->js_speed_sp = 0.0f; // Reset joystick offset when switching modes
+        pid->js_speed = 0.0f;
+        pid->js_multiplier_sp = 1.0f; // Reset speed multiplier when switching modes
+        pid->js_multiplier = 1.0f;
 
         static display_data_t base_angle_data = {NULL, PRINT_FLOAT, FLOAT, DISPLAY_TYPE_FLOAT, 2};
-        base_angle_data.data = &robot->pid->base_angle_sp;
+        base_angle_data.data = &pid->base_angle_sp;
 
         if (base_angle_config)
         {
             MAX72_Add_Data(&display, &base_angle_data);
             MAX72_Stop_Changing_Data(&display, 0); // Stop changing data to always show base angle
-            while (display.data[display.current_index].data != &robot->pid->base_angle_sp)
+            while (display.data[display.current_index].data != &pid->base_angle_sp)
             {
                 MAX72_Change_Data(&display, 1); // Force change to base angle display
             }
@@ -208,21 +206,21 @@ void Robot_read_serial_msg(robot_t *robot, char *msg)
 
     if (base_angle_config)
     {
-        robot->pid->js_multiplier_sp = 1.0f; // Fixed speed multiplier in base angle mode
+        pid->js_multiplier_sp = 1.0f; // Fixed speed multiplier in base angle mode
         if (fabs(js_y) > last_base_angle_stick_val && fabs(js_y) >= 0.1f)
         {
-            robot->pid->base_angle_sp += js_y * 0.02f; // Map joystick Y to base angle setpoint
-            if (robot->pid->base_angle_sp > robot->pid->max_angle_offset)
-                robot->pid->base_angle_sp = robot->pid->max_angle_offset;
-            else if (robot->pid->base_angle_sp < -robot->pid->max_angle_offset)
-                robot->pid->base_angle_sp = -robot->pid->max_angle_offset;
+            pid->base_angle_sp += js_y * 0.02f; // Map joystick Y to base angle setpoint
+            if (pid->base_angle_sp > pid->max_angle_offset)
+                pid->base_angle_sp = pid->max_angle_offset;
+            else if (pid->base_angle_sp < -pid->max_angle_offset)
+                pid->base_angle_sp = -pid->max_angle_offset;
         }
         last_base_angle_stick_val = fabs(js_y);
     }
     else
     {
-        robot->pid->js_multiplier_sp = js_x > 0.0f ? 1 - js_x : -1 - js_x; // 0.5 to 1.0 with sign
-        robot->pid->js_angle_offset_sp = js_y * ((js_y > 0)/4.0f + 1.0f ) * max_angle_offset;          // Map joystick Y to speed setpoint
+        pid->js_multiplier_sp = js_x > 0.0f ? 1 - js_x : -1 - js_x; // Map joystick X to speed multiplier setpoint
+        pid->js_speed_sp = js_y * ((js_y > 0)/3.0f + 1.0f ) * pid->max_speed;          // Map joystick Y to speed setpoint
     }
 }
 
@@ -232,10 +230,10 @@ void PID_Init(pid_t *pid)
     pid->Ki = -4.8f;
     pid->Kd = -0.004f;
 
-    pid->base_angle_sp = Load_BaseAngleOrDefault();
+    pid->base_angle_sp = 0.1f;//Load_BaseAngleOrDefault();
 
-    pid->js_angle_offset_sp = 0.0f;
-    pid->js_angle_offset = 0.0f;
+    pid->js_speed_sp = 0.0f;
+    pid->js_speed = 0.0f;
 
     pid->js_multiplier = 1.0f;
     pid->js_multiplier_sp = 1.0f;
@@ -247,15 +245,19 @@ void PID_Init(pid_t *pid)
     pid->speed_sp = 0.0f; // Do not change, change via joystick
 
     pid->max_angle_offset = 2.0f;
+    pid->max_speed = 5.0f; // r/s
+
     pid->angle_sp = 0.0f; // Do not change, it is only for CubeMonitor
 
-
     pid->active = 0;
+    pid->base_angle_config = 0;
     PID_Reset(pid);
 }
 
 static void PID_Angle_Update(pid_t *pid)
 {
+    pid->speed_sp = alpha * pid->js_speed_sp + (1.0f - alpha) * pid->speed_sp;
+
     float speed_err = pid->speed_sp - (encoder_r.speed + encoder_l.speed) / 2.0f;
 
     pid->integral_speed_err += speed_err * SAMPLING_PERIOD;
@@ -268,9 +270,9 @@ static void PID_Angle_Update(pid_t *pid)
     else if (angle_offset < -pid->max_angle_offset)
         angle_offset = -pid->max_angle_offset;
 
-    pid->js_angle_offset = alpha * pid->js_angle_offset_sp + (1.0f - alpha) * pid->js_angle_offset;
+    // pid->js_speed = alpha * pid->js_angle_offset_sp + (1.0f - alpha) * pid->js_speed;
 
-    pid->angle_sp = pid->base_angle_sp + angle_offset + pid->js_angle_offset;
+    pid->angle_sp = pid->base_angle_sp + angle_offset /*+ pid->js_speed*/;
 
     pid->last_speed_err = speed_err;
 }
@@ -316,6 +318,8 @@ static void Differential_Drive_Kinematics(pid_t *pid, float speed_setpoint)
 		V_l = -omega * (l / 2.0f);
 	}
 	else {
+        omega *= (js_y < -0.05f ? -1.0f : 1.0f); // Inverti il verso di rotazione se si va indietro
+        
 		// Avanzamento + rotazione
 		float R = V / omega;
 		// controllo che R non sia assurdo
@@ -327,17 +331,6 @@ static void Differential_Drive_Kinematics(pid_t *pid, float speed_setpoint)
 			V_l = omega * (R - l / 2.0f);
 		}
 	}
-
-
-//	float x = encoder_r.displacement;
-//	float y = encoder_l.displacement;
-//	float theta = imu.angle;
-
-//		float ICC_x = x - R * sinf(theta);
-//		float ICC_y = y + R * cosf(theta);
-//
-//		float cos_omega_dt = cosf(omega * dt);
-//		float sin_omega_dt = sinf(omega * dt);
 
 	float V_l_cmd = V_l + speed_setpoint;
 	float V_r_cmd = V_r + speed_setpoint;
@@ -359,14 +352,11 @@ static void PID_Speed_Update(pid_t *pid)
 {
     float error = pid->angle_sp - imu.angle;
 
-    if (fabs(error) > 30.0f)
-    {
+    if (fabs(error) > 30.0f) {
         set_speed(&stepper_l, 0.0f);
         set_speed(&stepper_r, 0.0f);
         PID_Reset(pid);
-    }
-    else
-    {
+    } else {
         pid->integral_error += error * SAMPLING_PERIOD;
         float derivative_error = (error - pid->last_error) / SAMPLING_PERIOD;
 
@@ -376,7 +366,7 @@ static void PID_Speed_Update(pid_t *pid)
 
         pid->js_multiplier = alpha * pid->js_multiplier_sp + (1.0f - alpha) * pid->js_multiplier;
 
-		if (pid->js_multiplier > 0.9f) {
+		if (pid->js_multiplier > 0.95f) {
 			set_speed(&stepper_l, speed_setpoint);
 			set_speed(&stepper_r, speed_setpoint);
 		} else {
@@ -386,8 +376,29 @@ static void PID_Speed_Update(pid_t *pid)
     pid->last_error = error;
 }
 
+static void PID_Set_Param(pid_t *pid){
+	if (fabs(pid->js_speed) > 0.5f && !pid->base_angle_config) {
+		pid->Kp = -0.3f;
+		pid->Ki = -4.8f;
+		pid->Kd = -0.004f;
+
+		pid->Kp_speed = 4.0f;
+		pid->Ki_speed = 0.0f;
+		pid->Kd_speed = 0.5f;
+	} else {
+		pid->Kp = -0.85f;
+		pid->Ki = -4.8f;
+		pid->Kd = -0.004f;
+
+		pid->Kp_speed = 0.73f;
+		pid->Ki_speed = 0.0f;
+		pid->Kd_speed = 0.0045f;
+	}
+}
+
 void PID_Update(pid_t *pid)
 {
+	PID_Set_Param(pid);
     PID_Angle_Update(pid);
     PID_Speed_Update(pid);
 }
@@ -399,8 +410,8 @@ void PID_Reset(pid_t *pid)
     pid->last_error = 0.0f;
     pid->last_speed_err = 0.0f;
 
-    pid->js_angle_offset_sp = 0.0f;
-    pid->js_angle_offset = 0.0f;
+    pid->js_speed_sp = 0.0f;
+    pid->js_speed = 0.0f;
     pid->js_multiplier_sp = 1.0f;
     pid->js_multiplier = 1.0f;
 }

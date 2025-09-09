@@ -10,7 +10,7 @@ typedef struct {
 	float base_angle_sp;
 	float integral_error, last_error;
 
-	float js_angle_offset_sp, js_angle_offset;
+	float js_speed_sp, js_speed;
 
 	float js_multiplier, js_multiplier_sp;
 
@@ -18,9 +18,11 @@ typedef struct {
 	float speed_sp;
 	float integral_speed_err, last_speed_err;
 
-	float max_angle_offset, angle_sp;
+	float max_angle_offset, angle_sp, max_speed;
 
 	uint8_t active;
+
+	uint8_t base_angle_config;
 } pid_t;
 
 void PID_Init(pid_t *pid);
@@ -35,7 +37,6 @@ typedef struct {
 	stepper_t *stepper_r;
 	power_module_t *power_module;
 	pid_t *pid;
-	uint8_t base_angle_config;
 } robot_t;
 
 extern encoder_t encoder_r;
