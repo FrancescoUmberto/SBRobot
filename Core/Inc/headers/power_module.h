@@ -15,9 +15,10 @@ typedef struct {
   uint8_t stop_issued; // Flag to indicate if a stop has been issued
   float accumulator[ACCUMULATOR_SIZE]; // Array for storing voltage samples
   uint8_t accumulator_idx; // Current index in the accumulator
-  ADC_HandleTypeDef hadc; // Handle for ADC
+  ADC_HandleTypeDef *hadc; // Handle for ADC
 } power_module_t;
 
 void PowerModule_init(power_module_t *power_module, ADC_HandleTypeDef *hadc);
 
+void PowerModule_read_data(power_module_t *power_module);
 void PowerModule_update_data(power_module_t *power_module);

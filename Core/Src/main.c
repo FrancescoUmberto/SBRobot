@@ -53,12 +53,13 @@
 /* Private variables ---------------------------------------------------------*/
 
 /* USER CODE BEGIN PV */
-static uint8_t tim6_update_cnt = 0;
+static uint8_t tim6_update_cnt = 0; // Counter incremented every 100ms by TIM6 interrupt
 static uint8_t IMU_Rx_Cplt = 0; // Flag to indicate that IMU data has been received
+static uint8_t ADC_Rx_Cplt = 0; // Flag to indicate that ADC data has been received
 
-uint8_t rx_byte;
-static char js_buffer[15];
-static uint8_t js_msg_ready = 0;
+uint8_t rx_byte; // Variable to store received byte from UART
+static char js_buffer[15]; // Buffer to store joystick message (14 chars + null terminator)
+static uint8_t js_msg_ready = 0; // Flag to indicate that a complete joystick message is ready
 
 robot_t robot;
 
@@ -191,13 +192,7 @@ int main(void)
 //  MAX72_Add_Data(&display, &data4);
 
   HAL_UART_Receive_DMA(&huart6, (uint8_t*)js_buffer, 14);
-	pid.active ^= 1;
-	if (pid.active) {
-		PID_Reset(&pid);
-	} else {
-		set_speed(&stepper_l, 0);
-		set_speed(&stepper_r, 0);
-	}
+
   while (1)
   {
     /* USER CODE END WHILE */
@@ -208,6 +203,11 @@ int main(void)
 		  IMU_Rx_Cplt = 0; // Reset flag
 		  IMU_Compute_Data(&imu); // Process received data
 	  }
+
+    if (ADC_Rx_Cplt) {
+      ADC_Rx_Cplt = 0; // Reset flag
+      PowerModule_update_data(&power_module);
+    }
 
 	  if (js_msg_ready) {
 		  js_msg_ready = 0; // Reset flag
@@ -237,7 +237,7 @@ int main(void)
 	      last_cnt = tim6_update_cnt;
 
 	      //TODO Activate
-//	      PowerModule_update_data(&power_module);
+//	      PowerModule_read_data(&power_module);
 
 	      MAX72_Update_Data(&display);
 	      if (tim6_update_cnt % 5 == 0) { // Update every 500ms
@@ -327,13 +327,11 @@ void HAL_TIM_PeriodElapsedCallback(TIM_HandleTypeDef *htim){
 
 void HAL_TIM_OC_DelayElapsedCallback(TIM_HandleTypeDef *htim)
 {
-    if (htim->Instance == TIM3 && htim->Channel == HAL_TIM_ACTIVE_CHANNEL_3)
-    {
-    	Encoder_event(&encoder_l);
-        __HAL_TIM_SET_COMPARE(htim, TIM_CHANNEL_3, !htim->Instance->CCR3);  // per ogni tick
-    } else if (htim->Instance == TIM4 && htim->Channel == HAL_TIM_ACTIVE_CHANNEL_3)
-	{
-    	Encoder_event(&encoder_r);
+  if (htim->Instance == TIM3 && htim->Channel == HAL_TIM_ACTIVE_CHANNEL_3) {
+    Encoder_event(&encoder_l);
+    __HAL_TIM_SET_COMPARE(htim, TIM_CHANNEL_3, !htim->Instance->CCR3);  // per ogni tick
+  } else if (htim->Instance == TIM4 && htim->Channel == HAL_TIM_ACTIVE_CHANNEL_3) {
+    Encoder_event(&encoder_r);
 		__HAL_TIM_SET_COMPARE(htim, TIM_CHANNEL_3, !htim->Instance->CCR3);  // per ogni tick
 	}
 }
@@ -341,7 +339,7 @@ void HAL_TIM_OC_DelayElapsedCallback(TIM_HandleTypeDef *htim)
 void HAL_GPIO_EXTI_Callback(uint16_t GPIO_Pin)
 {
   if(GPIO_Pin == GPIO_PIN_5) {
-//    on_click();
+   on_click();
   }
 }
 
@@ -350,6 +348,13 @@ void HAL_I2C_MemRxCpltCallback(I2C_HandleTypeDef *hi2c) {
 		// Data received from IMU, process it
 		IMU_Rx_Cplt = 1; // Set flag to indicate data is ready
 	}
+}
+
+void HAL_ADC_ConvCpltCallback(ADC_HandleTypeDef* hadc) {
+  if (hadc == power_module.hadc) {
+      ADC_Rx_Cplt = 1; // Set flag to indicate ADC data is ready
+      HAL_ADC_Stop_IT(hadc); // Stop ADC to prevent further interrupts until re-started
+  }
 }
 
 void HAL_UART_RxCpltCallback(UART_HandleTypeDef *huart) {
