@@ -254,7 +254,7 @@ void PID_Init(pid_t *pid)
     PID_Reset(pid);
 }
 
-static void PID_Angle_Update(pid_t *pid)
+static void PID_Setpoint_Speed(pid_t *pid)
 {
     pid->speed_sp = alpha * pid->js_speed_sp + (1.0f - alpha) * pid->speed_sp;
 
@@ -348,7 +348,7 @@ static void Differential_Drive_Kinematics(pid_t *pid, float speed_setpoint)
 	set_speed(&stepper_r, V_r_cmd);
 }
 
-static void PID_Speed_Update(pid_t *pid)
+static void PID_Setpoint_Angle(pid_t *pid)
 {
     float error = pid->angle_sp - imu.angle;
 
@@ -399,8 +399,8 @@ static void PID_Set_Param(pid_t *pid){
 void PID_Update(pid_t *pid)
 {
 	PID_Set_Param(pid);
-    PID_Angle_Update(pid);
-    PID_Speed_Update(pid);
+    PID_Setpoint_Speed(pid);
+    PID_Setpoint_Angle(pid);
 }
 
 void PID_Reset(pid_t *pid)
