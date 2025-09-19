@@ -5,6 +5,8 @@
 #include "power_module.h"
 #include "stm32f4xx_hal.h"
 
+#define TILT_ANGLE_LIMIT 30.0f // degrees
+
 typedef struct {
 	float Kp, Ki, Kd;
 	float base_angle_sp;
@@ -14,9 +16,9 @@ typedef struct {
 
 	float js_multiplier, js_multiplier_sp;
 
-	float Kp_speed, Ki_speed, Kd_speed;
+	float Kp_speed, Kd_speed;
 	float speed_sp;
-	float integral_speed_err, last_speed_err;
+	float last_speed_err;
 
 	float max_angle_offset, angle_sp, max_speed;
 
@@ -50,7 +52,7 @@ extern power_module_t power_module;
 
 extern pid_t pid;
 
-void Robot_init(robot_t *robot);
-void Robot_read_serial_msg(robot_t *robot, char *msg);
+void Robot_Init(robot_t *robot);
+void Robot_ReadSerialMsg(robot_t *robot, char *msg);
 
 void Save_BaseAngle(pid_t *pid);

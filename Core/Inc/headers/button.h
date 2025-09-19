@@ -3,4 +3,4 @@
 
 #define DEBOUNCE_DELAY 100 // ms
 
-void on_click();
+void Button_OnClick();

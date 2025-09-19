@@ -2,11 +2,8 @@
 #include "headers/display.h"
 #include "gpio.h"
 
-void PowerModule_init(power_module_t *power_module, ADC_HandleTypeDef *hadc){
-	power_module->warning_limit = WARNING_LIMIT; // Imposta il limite di avviso
-	power_module->stop_limit = STOP_LIMIT; // Imposta il limite di stop
-	power_module->warning_issued = 0; // Inizializza il flag di avviso
-	power_module->stop_issued = 0; // Inizializza il flag di stop
+void PowerModule_Init(power_module_t *power_module, ADC_HandleTypeDef *hadc){
+	power_module->alert_issued = 0; // Inizializza il flag di allerta
 	power_module->hadc = hadc; // Initialize ADC handle
 
 	HAL_ADC_Start(&power_module->hadc);  // Avvia manualmente
@@ -22,11 +19,11 @@ void PowerModule_init(power_module_t *power_module, ADC_HandleTypeDef *hadc){
 	power_module->accumulator_idx = 0; // Inizializza l'indice dell'accumulatore
 }
 
-void PoweModule_read_data(power_module_t *power_module){
+void PoweModule_ReadData(power_module_t *power_module){
 	HAL_ADC_Start_IT(&power_module->hadc);
 }
 
-void PowerModule_update_data(power_module_t *power_module){
+void PowerModule_UpdateData(power_module_t *power_module){
 	power_module->accumulator[power_module->accumulator_idx] = HAL_ADC_GetValue(&power_module->hadc) / SLOPE - OFFSET; // Calcola la tensione
 	power_module->accumulator_idx = (power_module->accumulator_idx + 1) % ACCUMULATOR_SIZE; // Aggiorna l'indice ciclicamente
 
@@ -38,17 +35,17 @@ void PowerModule_update_data(power_module_t *power_module){
 	power_module->voltage = sum / ACCUMULATOR_SIZE; // Aggiorna la tensione con la media
 
 	// Controlla i limiti
-	if (power_module->voltage < power_module->warning_limit) {
-		if (power_module->voltage < power_module->stop_limit) { // Se la tensione è sotto il limite di stop
-			if (!power_module->stop_issued) { // Se non è già stato emesso un stop
+	if (power_module->voltage < WARNING_LIMIT) { // Se la tensione è sotto il limite di avviso
+		if (power_module->voltage < STOP_LIMIT) { // Se la tensione è sotto il limite di stop
+			if (power_module->alert_issued < 2) { // Se non è già stato emesso un stop
 				MAX72_Stop_Changing_Data(&display, 1); // Ferma il cambio automatico dei dati
 				MAX72_Scroll_Start_IT("Critical Voltage!"); // Avvia lo scrolling del messaggio di stop
-				power_module->stop_issued = 1; // Imposta il flag di stop emesso
+				power_module->alert_issued = 2; // Imposta il flag di stop emesso
 			}
-		} else if (!power_module->warning_issued) { // Se non è già stato emesso un avviso
+		} else if (!power_module->alert_issued) { // Se non è già stato emesso un avviso
 			MAX72_Stop_Changing_Data(&display, 1); // Ferma il cambio automatico dei dati
 			MAX72_Scroll_Start_IT("Low Voltage!"); // Avvia lo scrolling del messaggio di avviso
-			power_module->warning_issued = 1; // Imposta il flag di avviso emesso
+			power_module->alert_issued = 1; // Imposta il flag di avviso emesso
 		}
 
 	}

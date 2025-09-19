@@ -3,7 +3,7 @@
 
 static uint32_t last_debounce_time = 0; // Timestamp of the last button press
 
-void on_click(){
+void Button_OnClick(){
 	if ((HAL_GetTick() - last_debounce_time) > DEBOUNCE_DELAY){
 		last_debounce_time = HAL_GetTick();
 

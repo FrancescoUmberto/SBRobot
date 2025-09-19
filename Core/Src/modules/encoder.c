@@ -126,7 +126,7 @@ void Encoder_init(encoder_t *encoder, TIM_HandleTypeDef *em_tim, TIM_HandleTypeD
 	SAMPLING_PERIOD =(float)(1+s_tim->Instance->ARR)*(1+s_tim->Instance->PSC)/HCLK; 
 } 
 
-void Encoder_read(encoder_t *encoder){ 
+void Encoder_Read(encoder_t *encoder){ 
 	compute_polynomial(encoder); 
 	compute_displacement(encoder); 
 	compute_speed(encoder); 

@@ -7,8 +7,8 @@
 
 float freq = 0.0f; // Frequency in Hz
 
-void speed_control(stepper_t *stepper){
-	Encoder_read(stepper->encoder);
+void Stepper_SpeedControl(stepper_t *stepper){
+	Encoder_Read(stepper->encoder);
 
 	float e = stepper->setpoint_speed - stepper->encoder->speed;
 

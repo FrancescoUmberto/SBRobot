@@ -176,7 +176,7 @@ int main(void)
   /* Infinite loop */
   /* USER CODE BEGIN WHILE */
   HAL_Delay(50);
-  Robot_init(&robot);
+  Robot_Init(&robot);
 
 //  char str[] = "SBRobot";
 //  display_data_t data = {str, PRINT_SCROLL, NO_SETTINGS, DISPLAY_TYPE_STRING, 0};
@@ -206,7 +206,7 @@ int main(void)
 
     if (ADC_Rx_Cplt) {
       ADC_Rx_Cplt = 0; // Reset flag
-      PowerModule_update_data(&power_module);
+      PowerModule_UpdateData(&power_module);
     }
 
 	  if (js_msg_ready) {
@@ -229,7 +229,7 @@ int main(void)
 //		      // Azzeriamo anche ErrorCode nella struct
 //		      huart6.ErrorCode = HAL_UART_ERROR_NONE;
 //		  }
-		     Robot_read_serial_msg(&robot, js_buffer);
+		     Robot_ReadSerialMsg(&robot, js_buffer);
 	  }
 
 	  static uint8_t last_cnt = 255;
@@ -237,7 +237,7 @@ int main(void)
 	      last_cnt = tim6_update_cnt;
 
 	      //TODO Activate
-//	      PowerModule_read_data(&power_module);
+//	      PowerModule_ReadData(&power_module);
 
 	      MAX72_Update_Data(&display);
 	      if (tim6_update_cnt % 5 == 0) { // Update every 500ms
@@ -317,8 +317,8 @@ void HAL_TIM_PeriodElapsedCallback(TIM_HandleTypeDef *htim){
 		if (pid.active){
 		  PID_Update(&pid);
 		}
-		speed_control(&stepper_r);
-		speed_control(&stepper_l);
+		Stepper_SpeedControl(&stepper_r);
+		Stepper_SpeedControl(&stepper_l);
 	} else if (htim->Instance == TIM10){
 		// Read from IMU
 		IMU_ReadData(&imu);
@@ -339,7 +339,7 @@ void HAL_TIM_OC_DelayElapsedCallback(TIM_HandleTypeDef *htim)
 void HAL_GPIO_EXTI_Callback(uint16_t GPIO_Pin)
 {
   if(GPIO_Pin == GPIO_PIN_5) {
-   on_click();
+   Button_OnClick();
   }
 }
 

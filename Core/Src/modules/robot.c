@@ -74,7 +74,7 @@ static void I2C1_BusRecovery(void)
     MX_I2C1_Init();
 }
 
-void Robot_init(robot_t *robot)
+void Robot_Init(robot_t *robot)
 {
 
     HAL_TIM_Base_Start_IT(&htim6);                     // Display timer (0.1MHz)
@@ -87,7 +87,7 @@ void Robot_init(robot_t *robot)
     HAL_TIM_PWM_Start(&htim2, TIM_CHANNEL_2); // Stepper left
     HAL_TIM_PWM_Start(&htim5, TIM_CHANNEL_1); // Stepper right
 
-    HAL_TIM_Base_Start(&htim8); // Virtual timer overflow timer
+    HAL_TIM_Base_Start(&htim8); // Virtual overflow timer
     HAL_TIM_Base_Start(&htim1); // Microsecond timer
 
     MAX72_init(&display);
@@ -109,7 +109,7 @@ void Robot_init(robot_t *robot)
     Stepper_init(&stepper_r, &htim2, TIM_CHANNEL_2, &encoder_r, GPIOB, GPIO_PIN_0);
     robot->stepper_r = &stepper_r;
 
-    PowerModule_init(&power_module, &hadc1);
+    PowerModule_Init(&power_module, &hadc1);
     robot->power_module = &power_module;
 
     PID_Init(&pid);
@@ -156,7 +156,7 @@ void Save_BaseAngle(pid_t *pid) {
     HAL_FLASH_Lock();
 }
 
-void Robot_read_serial_msg(robot_t *robot, char *msg)
+void Robot_ReadSerialMsg(robot_t *robot, char *msg)
 {
 	pid_t *pid = robot->pid;
     static float last_base_angle_stick_val = 0.0f;
@@ -232,14 +232,7 @@ void PID_Init(pid_t *pid)
 
     pid->base_angle_sp = 0.1f;//Load_BaseAngleOrDefault();
 
-    pid->js_speed_sp = 0.0f;
-    pid->js_speed = 0.0f;
-
-    pid->js_multiplier = 1.0f;
-    pid->js_multiplier_sp = 1.0f;
-
     pid->Kp_speed = 0.73f;
-	pid->Ki_speed = 0.0f;
 	pid->Kd_speed = 0.0045f;
 
     pid->speed_sp = 0.0f; // Do not change, change via joystick
@@ -254,16 +247,16 @@ void PID_Init(pid_t *pid)
     PID_Reset(pid);
 }
 
-static void PID_Setpoint_Speed(pid_t *pid)
+static void PID_SetpointSpeed(pid_t *pid)
 {
     pid->speed_sp = alpha * pid->js_speed_sp + (1.0f - alpha) * pid->speed_sp;
 
     float speed_err = pid->speed_sp - (encoder_r.speed + encoder_l.speed) / 2.0f;
 
-    pid->integral_speed_err += speed_err * SAMPLING_PERIOD;
     float derivative_speed_err = (speed_err - pid->last_speed_err) / SAMPLING_PERIOD;
 
-    float angle_offset = pid->Kp_speed * speed_err + pid->Ki_speed * pid->integral_speed_err + pid->Kd_speed * derivative_speed_err;
+    float angle_offset = pid->Kp_speed * speed_err + 
+                         pid->Kd_speed * derivative_speed_err;
 
     if (angle_offset > pid->max_angle_offset)
         angle_offset = pid->max_angle_offset;
@@ -277,7 +270,7 @@ static void PID_Setpoint_Speed(pid_t *pid)
     pid->last_speed_err = speed_err;
 }
 
-static void Differential_Drive_Kinematics(pid_t *pid, float speed_setpoint)
+static void Robot_DifferentialDriveKinematics(pid_t *pid, float speed_setpoint)
 {
     /*
     Differential Drive Kinematics
@@ -299,9 +292,6 @@ static void Differential_Drive_Kinematics(pid_t *pid, float speed_setpoint)
             [x - ICC_x, y - ICC_y, theta] + [ICC_x, ICC_y, omega*dt]
     */
 
-	float l = WHEEL_AXIS_MIDPOINT;
-	float dt = SAMPLING_PERIOD;
-
 	float V = js_y * pid->js_multiplier;
 	float omega = -js_x * 0.05f;
 
@@ -314,8 +304,8 @@ static void Differential_Drive_Kinematics(pid_t *pid, float speed_setpoint)
 	}
 	else if (fabsf(V) < 1e-6f) {
 		// Solo rotazione
-		V_r =  omega * (l / 2.0f);
-		V_l = -omega * (l / 2.0f);
+		V_r =  omega * (WHEEL_AXIS_MIDPOINT / 2.0f);
+		V_l = -omega * (WHEEL_AXIS_MIDPOINT / 2.0f);
 	}
 	else {
         omega *= (js_y < -0.05f ? -1.0f : 1.0f); // Inverti il verso di rotazione se si va indietro
@@ -327,8 +317,8 @@ static void Differential_Drive_Kinematics(pid_t *pid, float speed_setpoint)
 			V_r = V;
 			V_l = V;
 		} else {
-			V_r = omega * (R + l / 2.0f);
-			V_l = omega * (R - l / 2.0f);
+			V_r = omega * (R + WHEEL_AXIS_MIDPOINT / 2.0f);
+			V_l = omega * (R - WHEEL_AXIS_MIDPOINT / 2.0f);
 		}
 	}
 
@@ -348,11 +338,11 @@ static void Differential_Drive_Kinematics(pid_t *pid, float speed_setpoint)
 	set_speed(&stepper_r, V_r_cmd);
 }
 
-static void PID_Setpoint_Angle(pid_t *pid)
+static void PID_SetpointAngle(pid_t *pid)
 {
     float error = pid->angle_sp - imu.angle;
 
-    if (fabs(error) > 30.0f) {
+    if (fabs(error) > TILT_ANGLE_LIMIT) {
         set_speed(&stepper_l, 0.0f);
         set_speed(&stepper_r, 0.0f);
         PID_Reset(pid);
@@ -370,20 +360,19 @@ static void PID_Setpoint_Angle(pid_t *pid)
 			set_speed(&stepper_l, speed_setpoint);
 			set_speed(&stepper_r, speed_setpoint);
 		} else {
-			Differential_Drive_Kinematics(pid, speed_setpoint);
+			Robot_DifferentialDriveKinematics(pid, speed_setpoint);
 		}
     }
     pid->last_error = error;
 }
 
-static void PID_Set_Param(pid_t *pid){
+static void PID_SetParam(pid_t *pid){
 	if (fabs(pid->js_speed) > 0.5f && !pid->base_angle_config) {
 		pid->Kp = -0.3f;
 		pid->Ki = -4.8f;
 		pid->Kd = -0.004f;
 
 		pid->Kp_speed = 4.0f;
-		pid->Ki_speed = 0.0f;
 		pid->Kd_speed = 0.5f;
 	} else {
 		pid->Kp = -0.85f;
@@ -391,22 +380,20 @@ static void PID_Set_Param(pid_t *pid){
 		pid->Kd = -0.004f;
 
 		pid->Kp_speed = 0.73f;
-		pid->Ki_speed = 0.0f;
 		pid->Kd_speed = 0.0045f;
 	}
 }
 
 void PID_Update(pid_t *pid)
 {
-	PID_Set_Param(pid);
-    PID_Setpoint_Speed(pid);
-    PID_Setpoint_Angle(pid);
+	PID_SetParam(pid);
+    PID_SetpointSpeed(pid);
+    PID_SetpointAngle(pid);
 }
 
 void PID_Reset(pid_t *pid)
 {
     pid->integral_error = 0.0f;
-    pid->integral_speed_err = 0.0f;
     pid->last_error = 0.0f;
     pid->last_speed_err = 0.0f;
 

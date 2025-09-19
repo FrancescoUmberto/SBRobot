@@ -25,7 +25,7 @@ typedef struct{
 
 void Encoder_init(encoder_t *encoder, TIM_HandleTypeDef *em_tim, TIM_HandleTypeDef *s_tim, int8_t direction_invert);
 
-void Encoder_read(encoder_t *encoder);
+void Encoder_Read(encoder_t *encoder);
 
 void Encoder_event(encoder_t *encoder);
 
