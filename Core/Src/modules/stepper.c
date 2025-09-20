@@ -38,12 +38,12 @@ void Stepper_SpeedControl(stepper_t *stepper){
 	stepper->tim->EGR = TIM_EGR_UG;
 }
 
-void set_speed(stepper_t *stepper, float speed){
+void Stepper_SetSpeed(stepper_t *stepper, float speed){
 	stepper->setpoint_speed = speed;
 }
 
 void Stepper_init(stepper_t *stepper, TIM_HandleTypeDef *htim, uint32_t tim_channel,
-		encoder_t *encoder, GPIO_TypeDef *DIR_PORT, uint16_t DIR_PIN){
+	encoder_t *encoder, GPIO_TypeDef *DIR_PORT, uint16_t DIR_PIN){
 	stepper->angle_step = ANGLE_STEP;
 	stepper->tim = htim->Instance;
 	stepper->DIR_PORT = DIR_PORT;

@@ -13,9 +13,9 @@ void Button_OnClick(){
 		if (pid.active) {
 			PID_Reset(&pid); // Reset PID before starting control to avoid spikes
 		} else {
-			set_speed(&stepper_l, 0);
-			set_speed(&stepper_r, 0);
-			Save_BaseAngle(&pid); // Save the current base angle to flash
+			Stepper_SetSpeed(&stepper_l, 0);
+			Stepper_SetSpeed(&stepper_r, 0);
+			PID_SaveBaseAngle(&pid); // Save the current base angle to flash
 		}
 	}
 }

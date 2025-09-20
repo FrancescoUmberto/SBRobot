@@ -6,8 +6,6 @@
 #include <stdio.h>
 #include "stm32f4xx_hal.h"
 
-#define FLASH_START_ADDR   0x08060000
-
 encoder_t encoder_r;
 stepper_t stepper_r;
 
@@ -20,12 +18,6 @@ pid_t pid;
 
 float alpha = 0.05f;
 float js_x = 0.0f, js_y = 0.0f;
-
-#define I2C_SCL_GPIO_Port GPIOB
-#define I2C_SCL_Pin GPIO_PIN_8
-#define I2C_SDA_GPIO_Port GPIOB
-#define I2C_SDA_Pin GPIO_PIN_9
-#define WHEEL_AXIS_MIDPOINT 132.5 // mm
 
 // quando HAL_I2C_Master_Receive_DMA() fallisce per colpa del bus bloccato (es. I2C_FLAG_BUSY sempre attivo),
 // l’unico rimedio affidabile è resettare completamente il periferico I²C
@@ -116,7 +108,7 @@ void Robot_Init(robot_t *robot)
     robot->pid = &pid;
 }
 
-static float Load_BaseAngleOrDefault(void) {
+static float PID_LoadBaseAngleOrDefault(void) {
     uint32_t raw = *(uint32_t*)FLASH_START_ADDR;
 
     // se il valore non è mai stato scritto, Flash contiene 0xFFFFFFFF
@@ -129,7 +121,7 @@ static float Load_BaseAngleOrDefault(void) {
     }
 }
 
-void Save_BaseAngle(pid_t *pid) {
+void PID_SaveBaseAngle(pid_t *pid) {
     HAL_FLASH_Unlock();
 
     // Cancella la pagina prima di scrivere
@@ -156,9 +148,8 @@ void Save_BaseAngle(pid_t *pid) {
     HAL_FLASH_Lock();
 }
 
-void Robot_ReadSerialMsg(robot_t *robot, char *msg)
+void PID_ReadSerialMsg(pid_t *pid, char *msg)
 {
-	pid_t *pid = robot->pid;
     static float last_base_angle_stick_val = 0.0f;
     uint8_t base_angle_config = 0;
 
@@ -230,7 +221,7 @@ void PID_Init(pid_t *pid)
     pid->Ki = -4.8f;
     pid->Kd = -0.004f;
 
-    pid->base_angle_sp = 0.1f;//Load_BaseAngleOrDefault();
+    pid->base_angle_sp = PID_LoadBaseAngleOrDefault();
 
     pid->Kp_speed = 0.73f;
 	pid->Kd_speed = 0.0045f;
@@ -334,8 +325,8 @@ static void Robot_DifferentialDriveKinematics(pid_t *pid, float speed_setpoint)
 	if (V_r_cmd >  MAX_CTRL_FREQUENCY) V_r_cmd =  MAX_CTRL_FREQUENCY;
 	if (V_r_cmd < -MAX_CTRL_FREQUENCY) V_r_cmd = -MAX_CTRL_FREQUENCY;
 
-	set_speed(&stepper_l, V_l_cmd);
-	set_speed(&stepper_r, V_r_cmd);
+	Stepper_SetSpeed(&stepper_l, V_l_cmd);
+	Stepper_SetSpeed(&stepper_r, V_r_cmd);
 }
 
 static void PID_SetpointAngle(pid_t *pid)
@@ -343,8 +334,8 @@ static void PID_SetpointAngle(pid_t *pid)
     float error = pid->angle_sp - imu.angle;
 
     if (fabs(error) > TILT_ANGLE_LIMIT) {
-        set_speed(&stepper_l, 0.0f);
-        set_speed(&stepper_r, 0.0f);
+        Stepper_SetSpeed(&stepper_l, 0.0f);
+        Stepper_SetSpeed(&stepper_r, 0.0f);
         PID_Reset(pid);
     } else {
         pid->integral_error += error * SAMPLING_PERIOD;
@@ -357,8 +348,8 @@ static void PID_SetpointAngle(pid_t *pid)
         pid->js_multiplier = alpha * pid->js_multiplier_sp + (1.0f - alpha) * pid->js_multiplier;
 
 		if (pid->js_multiplier > 0.95f) {
-			set_speed(&stepper_l, speed_setpoint);
-			set_speed(&stepper_r, speed_setpoint);
+			Stepper_SetSpeed(&stepper_l, speed_setpoint);
+			Stepper_SetSpeed(&stepper_r, speed_setpoint);
 		} else {
 			Robot_DifferentialDriveKinematics(pid, speed_setpoint);
 		}
@@ -366,7 +357,7 @@ static void PID_SetpointAngle(pid_t *pid)
     pid->last_error = error;
 }
 
-static void PID_SetParam(pid_t *pid){
+static void PID_SetParams(pid_t *pid){
 	if (fabs(pid->js_speed) > 0.5f && !pid->base_angle_config) {
 		pid->Kp = -0.3f;
 		pid->Ki = -4.8f;
@@ -386,7 +377,7 @@ static void PID_SetParam(pid_t *pid){
 
 void PID_Update(pid_t *pid)
 {
-	PID_SetParam(pid);
+	PID_SetParams(pid);
     PID_SetpointSpeed(pid);
     PID_SetpointAngle(pid);
 }

@@ -5,7 +5,16 @@
 #include "power_module.h"
 #include "stm32f4xx_hal.h"
 
+#define I2C_SCL_GPIO_Port GPIOB
+#define I2C_SCL_Pin GPIO_PIN_8
+#define I2C_SDA_GPIO_Port GPIOB
+#define I2C_SDA_Pin GPIO_PIN_9
+
 #define TILT_ANGLE_LIMIT 30.0f // degrees
+
+#define WHEEL_AXIS_MIDPOINT 132.5 // mm
+
+#define FLASH_START_ADDR   0x08060000  // Start address of the flash sector to store base angle
 
 typedef struct {
 	float Kp, Ki, Kd;
@@ -31,6 +40,10 @@ void PID_Init(pid_t *pid);
 void PID_Update(pid_t *pid);
 void PID_Reset(pid_t *pid);
 
+void PID_ReadSerialMsg(pid_t *pid, char *msg);
+
+void PID_SaveBaseAngle(pid_t *pid);
+
 typedef struct {
 	imu_t *imu;
 	encoder_t *encoder_l;
@@ -53,6 +66,3 @@ extern power_module_t power_module;
 extern pid_t pid;
 
 void Robot_Init(robot_t *robot);
-void Robot_ReadSerialMsg(robot_t *robot, char *msg);
-
-void Save_BaseAngle(pid_t *pid);

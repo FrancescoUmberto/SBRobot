@@ -18,7 +18,7 @@ typedef struct{
 	uint16_t DIR_PIN;
 } stepper_t;
 
-void set_speed(stepper_t *stepper, float speed);
+void Stepper_SetSpeed(stepper_t *stepper, float speed);
 
 void Stepper_SpeedControl(stepper_t *stepper);
 
