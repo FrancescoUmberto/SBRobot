@@ -34,15 +34,15 @@ typedef struct {
 	uint8_t active;
 
 	uint8_t base_angle_config;
-} pid_t;
+} controller_t;
 
-void PID_Init(pid_t *pid);
-void PID_Update(pid_t *pid);
-void PID_Reset(pid_t *pid);
+void Controller_Init(controller_t *controller);
+void Controller_Update(controller_t *controller);
+void Controller_Reset(controller_t *controller);
 
-void PID_ReadSerialMsg(pid_t *pid, char *msg);
+void Controller_ReadSerialMsg(controller_t *controller, char *msg);
 
-void PID_SaveBaseAngle(pid_t *pid);
+void Controller_SaveBaseAngle(controller_t *controller);
 
 typedef struct {
 	imu_t *imu;
@@ -51,7 +51,7 @@ typedef struct {
 	stepper_t *stepper_l;
 	stepper_t *stepper_r;
 	power_module_t *power_module;
-	pid_t *pid;
+	controller_t *controller;
 } robot_t;
 
 extern encoder_t encoder_r;
@@ -63,6 +63,6 @@ extern stepper_t stepper_l;
 extern imu_t imu;
 extern power_module_t power_module;
 
-extern pid_t pid;
+extern controller_t controller;
 
 void Robot_Init(robot_t *robot);

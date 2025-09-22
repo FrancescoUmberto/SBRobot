@@ -9,13 +9,13 @@ void Button_OnClick(){
 
 		HAL_GPIO_TogglePin(GPIOC, GPIO_PIN_9);
 
-		pid.active ^= 1;
-		if (pid.active) {
-			PID_Reset(&pid); // Reset PID before starting control to avoid spikes
+		controller.active ^= 1;
+		if (controller.active) {
+			Controller_Reset(&controller); // Reset controller before starting control to avoid spikes
 		} else {
 			Stepper_SetSpeed(&stepper_l, 0);
 			Stepper_SetSpeed(&stepper_r, 0);
-			PID_SaveBaseAngle(&pid); // Save the current base angle to flash
+			Controller_SaveBaseAngle(&controller); // Save the current base angle to flash
 		}
 	}
 }

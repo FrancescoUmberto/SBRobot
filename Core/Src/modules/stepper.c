@@ -2,9 +2,6 @@
 #include <stdio.h>
 #include <math.h>
 
-#define AEP 30 // Actual Error Proportional gain
-#define LEP 205 // Last Error Proportional gain
-
 float freq = 0.0f; // Frequency in Hz
 
 void Stepper_SpeedControl(stepper_t *stepper){
@@ -34,8 +31,8 @@ void Stepper_SpeedControl(stepper_t *stepper){
 	HAL_GPIO_WritePin(stepper->DIR_PORT, stepper->DIR_PIN, (stepper->encoder->direction_invert > 0 ? sign : !sign));
 
 	stepper->tim->ARR = fabs(1/stepper->frequency)*HCLK-1; // period = (1+ARR)*(1+PSC)/HCLK;
-	*stepper->CCR = (stepper->tim->ARR+1)/2;
-	stepper->tim->EGR = TIM_EGR_UG;
+	*stepper->CCR = (stepper->tim->ARR+1)/2; // 50% duty cycle
+	stepper->tim->EGR = TIM_EGR_UG; // Force update of the timer registers
 }
 
 void Stepper_SetSpeed(stepper_t *stepper, float speed){

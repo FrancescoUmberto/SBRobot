@@ -229,7 +229,7 @@ int main(void)
 //		      // Azzeriamo anche ErrorCode nella struct
 //		      huart6.ErrorCode = HAL_UART_ERROR_NONE;
 //		  }
-		     PID_ReadSerialMsg(&pid, js_buffer);
+		     Controller_ReadSerialMsg(&controller, js_buffer);
 	  }
 
 	  static uint8_t last_cnt = 255;
@@ -314,8 +314,8 @@ void HAL_TIM_PeriodElapsedCallback(TIM_HandleTypeDef *htim){
 			tim6_update_cnt = 0;
 		}
 	} else if (htim->Instance == TIM7) {
-		if (pid.active){
-		  PID_Update(&pid);
+		if (controller.active){
+		  Controller_Update(&controller);
 		}
 		Stepper_SpeedControl(&stepper_r);
 		Stepper_SpeedControl(&stepper_l);
