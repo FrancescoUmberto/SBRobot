@@ -6,7 +6,7 @@
 float SAMPLING_PERIOD;
 uint32_t HCLK;
 
-static uint32_t get_virtual_timer_32bit(void){
+static uint32_t Encoder_GetVirtualtTimer32bit(void){
     uint16_t high, low;
 
     high = __HAL_TIM_GET_COUNTER(&htim8);
@@ -19,7 +19,7 @@ static uint32_t get_virtual_timer_32bit(void){
 // seconds uint32_t HCLK;
 // Vandermonde matrix in descending order of powers
 
-static void build_vandermonde_desc(float32_t *t, float32_t *A)
+static void Encoder_BuildVandermondeDesc(float32_t *t, float32_t *A)
 {
 	for (uint32_t i = 0; i < N_SAMPLES; i++)
 	{
@@ -29,7 +29,7 @@ static void build_vandermonde_desc(float32_t *t, float32_t *A)
 		}
 	}
 }
-static void compute_polynomial(encoder_t *encoder)
+static void Encoder_ComputePolynomial(encoder_t *encoder)
 {
 	/* Computes the polynomial coefficients for the position vector. This is used to smooth the position data over time. n > m (N_SAMPLES > N_COEFF) */
 	float32_t t_normalized[N_SAMPLES];
@@ -51,7 +51,7 @@ static void compute_polynomial(encoder_t *encoder)
 		B_d[i] = encoder->positions[idx]; 
 	} 
 	arm_matrix_instance_f32 A, AT, ATA, ATA_inv, ATA_inv_AT, P, B; 
-	build_vandermonde_desc(t_normalized, A_d); 
+	Encoder_BuildVandermondeDesc(t_normalized, A_d); 
 	arm_mat_init_f32(&A, N_SAMPLES, N_COEFF, A_d); 
 	arm_mat_init_f32(&ATA, N_COEFF, N_COEFF, ATA_d); 
 	arm_mat_init_f32(&ATA_inv, N_COEFF, N_COEFF, ATA_inv_d); 
@@ -72,27 +72,27 @@ static void compute_polynomial(encoder_t *encoder)
 		for(uint8_t i=0;i<N_COEFF;i++){ 
 			encoder->polynomial[i] = 0.0f; // Reset to zero on error 
 		} 
-		encoder->t_ref = get_virtual_timer_32bit(); // Reset reference time on error
+		encoder->t_ref = Encoder_GetVirtualtTimer32bit(); // Reset reference time on error
 	} 
 } 
 
-static void compute_displacement(encoder_t *encoder){ 
+static void Encoder_ComputeDisplacement(encoder_t *encoder){ 
 //	encoder->old_displacement = encoder->displacement; // Save old displacement for speed calculation
 	encoder->displacement = 0.0f; 
-	float current_time = (get_virtual_timer_32bit() - encoder->t_ref)/1000000.0f; // Time since reference
+	float current_time = (Encoder_GetVirtualtTimer32bit() - encoder->t_ref)/1000000.0f; // Time since reference
 	for(int i = 0; i < N_COEFF; i++){ 
 		encoder->displacement += encoder->polynomial[i] * powf(current_time, POLY_ORDER - i); 
 	} 
 } 
 
-static void compute_speed(encoder_t *encoder){ 
+static void Encoder_ComputeSpeed(encoder_t *encoder){ 
 	encoder->speed = (encoder->position*RCF - encoder->old_displacement) / SAMPLING_PERIOD; // Speed in radians per second
 	encoder->old_displacement = encoder->position * RCF;
 //	encoder->speed = encoder->speed * 0.9 + 0.1 * (encoder->displacement - encoder->old_displacement) / SAMPLING_PERIOD; // Speed in radians per second
 	// encoder->old_displacement = encoder->position * RCF; //
 //	float old_speed = encoder->speed;
 //	 encoder->speed = 0.0f; //
-//	 float current_time = (get_virtual_timer_32bit() - encoder->t_ref)/1000000.0f; // Time since reference
+//	 float current_time = (Encoder_GetVirtualtTimer32bit() - encoder->t_ref)/1000000.0f; // Time since reference
 //	 for(uint8_t i = 0; i < POLY_ORDER; i++){
 //	 	encoder->speed += (POLY_ORDER - i) *encoder->polynomial[i] * powf(current_time, POLY_ORDER - i - 1);
 //	 }
@@ -100,7 +100,7 @@ static void compute_speed(encoder_t *encoder){
 //	 encoder->speed = 0.05f * encoder->speed + 0.95f * old_speed;
 } 
 
-void Encoder_init(encoder_t *encoder, TIM_HandleTypeDef *em_tim, TIM_HandleTypeDef *s_tim, int8_t direction_invert){ 
+void Encoder_Init(encoder_t *encoder, TIM_HandleTypeDef *em_tim, TIM_HandleTypeDef *s_tim, int8_t direction_invert){ 
 	/* Parameters: 
 	 - encoder: Pointer to the encoder structure 
 	 - em_tim: Pointer to the encoder mode timer handle 
@@ -111,7 +111,7 @@ void Encoder_init(encoder_t *encoder, TIM_HandleTypeDef *em_tim, TIM_HandleTypeD
 	encoder->tim->CCR3 = 1; 
 	encoder->direction_invert = (direction_invert == 0) ? 1 : (direction_invert > 0 ? 1 : -1); 
 	encoder->speed = 0; 
-	uint32_t current_time = get_virtual_timer_32bit();
+	uint32_t current_time = Encoder_GetVirtualtTimer32bit();
 	for (uint8_t i = 0; i < N_SAMPLES; i++) { 
 		encoder->timestamps[i] = current_time + i; 
 		encoder->positions[i] = 0; 
@@ -127,22 +127,22 @@ void Encoder_init(encoder_t *encoder, TIM_HandleTypeDef *em_tim, TIM_HandleTypeD
 } 
 
 void Encoder_Read(encoder_t *encoder){ 
-	compute_polynomial(encoder); 
-	compute_displacement(encoder); 
-	compute_speed(encoder); 
+//	Encoder_ComputePolynomial(encoder); 
+//	Encoder_ComputeDisplacement(encoder); 
+	Encoder_ComputeSpeed(encoder); 
 } 
 
-void Encoder_event(encoder_t *encoder){ 
+void Encoder_Event(encoder_t *encoder){ 
 	encoder->direction = (encoder->tim->CR1 & TIM_CR1_DIR_Msk) >> TIM_CR1_DIR_Pos; 
 	encoder->position += (encoder->direction ? -1 : 1) * encoder->direction_invert; 
-	uint32_t current_time = get_virtual_timer_32bit(); // Store current time
-	// calcolo robusto dell'indice precedente nel buffer circolare 
-	uint8_t prev = (encoder->vec_index + N_SAMPLES - 1) % N_SAMPLES; 
-	if(encoder->timestamps[prev] == current_time){ 
-		encoder->positions[prev] = encoder->position * RCF; // Convert to radians 
-	} else { 
-		encoder->timestamps[encoder->vec_index] = current_time; 
-		encoder->positions[encoder->vec_index] = encoder->position * RCF; // Convert to radians 
-		encoder->vec_index = (encoder->vec_index + 1) % N_SAMPLES; 
-	} 
+//	uint32_t current_time = Encoder_GetVirtualtTimer32bit(); // Store current time
+//	// calcolo robusto dell'indice precedente nel buffer circolare 
+//	uint8_t prev = (encoder->vec_index + N_SAMPLES - 1) % N_SAMPLES; 
+//	if(encoder->timestamps[prev] == current_time){ 
+//		encoder->positions[prev] = encoder->position * RCF; // Convert to radians 
+//	} else { 
+//		encoder->timestamps[encoder->vec_index] = current_time; 
+//		encoder->positions[encoder->vec_index] = encoder->position * RCF; // Convert to radians 
+//		encoder->vec_index = (encoder->vec_index + 1) % N_SAMPLES; 
+//	} 
 }

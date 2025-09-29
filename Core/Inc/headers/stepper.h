@@ -24,5 +24,5 @@ void Stepper_SetSpeed(stepper_t *stepper, float speed);
 
 void Stepper_SpeedControl(stepper_t *stepper);
 
-void Stepper_init(stepper_t *stepper, TIM_HandleTypeDef *htim, uint32_t tim_channel,
+void Stepper_Init(stepper_t *stepper, TIM_HandleTypeDef *htim, uint32_t tim_channel,
 		encoder_t *encoder, GPIO_TypeDef *DIR_PORT, uint16_t DIR_PIN);

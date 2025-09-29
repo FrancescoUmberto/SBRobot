@@ -73,57 +73,57 @@ void SystemClock_Config(void);
 
 /* Private user code ---------------------------------------------------------*/
 /* USER CODE BEGIN 0 */
-static void transmit_IMU_data(){
-	  char msg[80];
-	  static uint8_t calibration_step_shown = 0;
-	  switch (imu.calibration_mode) {
-		  case 1: // Calibration mode
-	//	    			  MAX72_Print_String("Pitch forward", NO_SETTINGS);
-			  snprintf(msg, sizeof(msg), "Pitch forward\n");
-			break;
-		  case 2: // Calibration mode
-			  //	    			  MAX72_Print_String("Pitch backward", NO_SETTINGS);
-			  snprintf(msg, sizeof(msg), "Pitch backward\n");
-			break;
-	  }
-	  if (calibration_step_shown < imu.calibration_mode) {
-		  HAL_UART_Transmit(&huart2, (uint8_t*)msg, strlen(msg), HAL_MAX_DELAY);
-		  calibration_step_shown = imu.calibration_mode; // Update the last shown step
-	  }
+// static void transmit_IMU_data(){
+// 	  char msg[80];
+// 	  static uint8_t calibration_step_shown = 0;
+// 	  switch (imu.calibration_mode) {
+// 		  case 1: // Calibration mode
+// 	//	    			  MAX72_Print_String("Pitch forward", NO_SETTINGS);
+// 			  snprintf(msg, sizeof(msg), "Pitch forward\n");
+// 			break;
+// 		  case 2: // Calibration mode
+// 			  //	    			  MAX72_Print_String("Pitch backward", NO_SETTINGS);
+// 			  snprintf(msg, sizeof(msg), "Pitch backward\n");
+// 			break;
+// 	  }
+// 	  if (calibration_step_shown < imu.calibration_mode) {
+// 		  HAL_UART_Transmit(&huart2, (uint8_t*)msg, strlen(msg), HAL_MAX_DELAY);
+// 		  calibration_step_shown = imu.calibration_mode; // Update the last shown step
+// 	  }
 
-	  // print az imu
-	  if (imu.calibration_mode){
-		  snprintf(msg, sizeof(msg), "Az: %.3f	Bias: %.3f	ax: %.3f	wy: %.3f\n", imu.az, imu.az_bias,imu.ax,imu.wy);
-	  } else {
-		  snprintf(msg, sizeof(msg), "Deg: %.3f ° - wy: %.3f - ax: %.3f - az: %.3f - az_bias: %.3f\n", imu.angle, imu.wy, imu.ax,imu.az,imu.az_bias);
-	  }
+// 	  // print az imu
+// 	  if (imu.calibration_mode){
+// 		  snprintf(msg, sizeof(msg), "Az: %.3f	Bias: %.3f	ax: %.3f	wy: %.3f\n", imu.az, imu.az_bias,imu.ax,imu.wy);
+// 	  } else {
+// 		  snprintf(msg, sizeof(msg), "Deg: %.3f ° - wy: %.3f - ax: %.3f - az: %.3f - az_bias: %.3f\n", imu.angle, imu.wy, imu.ax,imu.az,imu.az_bias);
+// 	  }
 
-	  HAL_UART_Transmit(&huart2, (uint8_t*)msg, strlen(msg), HAL_MAX_DELAY);
-}
+// 	  HAL_UART_Transmit(&huart2, (uint8_t*)msg, strlen(msg), HAL_MAX_DELAY);
+// }
 
-static void show_calibration_messages(){
-		  static uint8_t calibration_step_shown = 0;
-		  static char msg[20];
-		  switch (imu.calibration_mode) {
-			  case 1: // Calibration mode
-		//	    			  MAX72_Print_String("Pitch forward", NO_SETTINGS);
-				  snprintf(msg, sizeof(msg), "Pitch forward\n");
-				break;
-			  case 2: // Calibration mode
-				  //	    			  MAX72_Print_String("Pitch backward", NO_SETTINGS);
-				  snprintf(msg, sizeof(msg), "Pitch backward\n");
-				break;
-		  }
-		  if (calibration_step_shown < imu.calibration_mode) {
-			  MAX72_Stop_Changing_Data(&display, 1);
-			  MAX72_Scroll_Start_IT(msg);
-			  calibration_step_shown = imu.calibration_mode; // Update the last shown step
-		  } else if (calibration_step_shown>imu.calibration_mode) {
-			  // Reset the calibration step shown when calibration is complete
-			  calibration_step_shown = 0;
-			  MAX72_Resume_Changing_Data(&display,1);
-		  }
-}
+// static void show_calibration_messages(){
+// 		  static uint8_t calibration_step_shown = 0;
+// 		  static char msg[20];
+// 		  switch (imu.calibration_mode) {
+// 			  case 1: // Calibration mode
+// 		//	    			  MAX72_Print_String("Pitch forward", NO_SETTINGS);
+// 				  snprintf(msg, sizeof(msg), "Pitch forward\n");
+// 				break;
+// 			  case 2: // Calibration mode
+// 				  //	    			  MAX72_Print_String("Pitch backward", NO_SETTINGS);
+// 				  snprintf(msg, sizeof(msg), "Pitch backward\n");
+// 				break;
+// 		  }
+// 		  if (calibration_step_shown < imu.calibration_mode) {
+// 			  MAX72_Stop_Changing_Data(&display, 1);
+// 			  MAX72_Scroll_Start_IT(msg);
+// 			  calibration_step_shown = imu.calibration_mode; // Update the last shown step
+// 		  } else if (calibration_step_shown>imu.calibration_mode) {
+// 			  // Reset the calibration step shown when calibration is complete
+// 			  calibration_step_shown = 0;
+// 			  MAX72_Resume_Changing_Data(&display,1);
+// 		  }
+// }
 /* USER CODE END 0 */
 
 /**
@@ -201,7 +201,7 @@ int main(void)
 
 	  if (IMU_Rx_Cplt) {
 		  IMU_Rx_Cplt = 0; // Reset flag
-		  IMU_Compute_Data(&imu); // Process received data
+		  IMU_ComputeData(&imu); // Process received data
 	  }
 
     if (ADC_Rx_Cplt) {
@@ -328,10 +328,10 @@ void HAL_TIM_PeriodElapsedCallback(TIM_HandleTypeDef *htim){
 void HAL_TIM_OC_DelayElapsedCallback(TIM_HandleTypeDef *htim)
 {
   if (htim->Instance == TIM3 && htim->Channel == HAL_TIM_ACTIVE_CHANNEL_3) {
-    Encoder_event(&encoder_l);
+    Encoder_Event(&encoder_l);
     __HAL_TIM_SET_COMPARE(htim, TIM_CHANNEL_3, !htim->Instance->CCR3);  // per ogni tick
   } else if (htim->Instance == TIM4 && htim->Channel == HAL_TIM_ACTIVE_CHANNEL_3) {
-    Encoder_event(&encoder_r);
+    Encoder_Event(&encoder_r);
 		__HAL_TIM_SET_COMPARE(htim, TIM_CHANNEL_3, !htim->Instance->CCR3);  // per ogni tick
 	}
 }

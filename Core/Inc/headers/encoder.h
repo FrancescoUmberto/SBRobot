@@ -23,11 +23,11 @@ typedef struct{
 	float32_t old_displacement;
 } encoder_t;
 
-void Encoder_init(encoder_t *encoder, TIM_HandleTypeDef *em_tim, TIM_HandleTypeDef *s_tim, int8_t direction_invert);
+void Encoder_Init(encoder_t *encoder, TIM_HandleTypeDef *em_tim, TIM_HandleTypeDef *s_tim, int8_t direction_invert);
 
 void Encoder_Read(encoder_t *encoder);
 
-void Encoder_event(encoder_t *encoder);
+void Encoder_Event(encoder_t *encoder);
 
 extern float SAMPLING_PERIOD;
 extern uint32_t HCLK;
