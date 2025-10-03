@@ -76,7 +76,7 @@ void IMU_ComputeData(imu_t *imu) {
 //		// Convert raw data to float values (/16834.0f for accelerometer -> in g, /131.0f for gyroscope)
 //		imu->az = (1-IMU_EMA_ALPHA) * imu->az + IMU_EMA_ALPHA * (((int16_t)(imu->pData[4] << 8) | imu->pData[5]) - imu->az_bias)/ 16384.0f * 9.81f;
 //	}
-	float old_wy = imu->wy;
+//	float old_wy = imu->wy;
 //	imu->wx = (1-IMU_EMA_ALPHA) * imu->wx + IMU_EMA_ALPHA * ((int16_t)(imu->pData[8] << 8) | imu->pData[9]) / 131.0f;
 	imu->wy = (1-IMU_EMA_ALPHA) * imu->wy + IMU_EMA_ALPHA * (((int16_t)(imu->pData[10] << 8) | imu->pData[11]) - 393.589f) / 131.0f;
 //	imu->wz = (1-IMU_EMA_ALPHA) * imu->wz + IMU_EMA_ALPHA * ((int16_t)(imu->pData[12] << 8) | imu->pData[13]) / 131.0f;

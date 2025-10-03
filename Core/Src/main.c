@@ -57,7 +57,6 @@ static uint8_t tim6_update_cnt = 0; // Counter incremented every 100ms by TIM6 i
 static uint8_t IMU_Rx_Cplt = 0; // Flag to indicate that IMU data has been received
 static uint8_t ADC_Rx_Cplt = 0; // Flag to indicate that ADC data has been received
 
-uint8_t rx_byte; // Variable to store received byte from UART
 static char js_buffer[15]; // Buffer to store joystick message (14 chars + null terminator)
 static uint8_t js_msg_ready = 0; // Flag to indicate that a complete joystick message is ready
 
@@ -170,6 +169,30 @@ int main(void)
   MX_TIM1_Init();
   MX_TIM8_Init();
   /* USER CODE BEGIN 2 */
+
+  HAL_NVIC_EnableIRQ(TIM1_UP_TIM10_IRQn);
+  HAL_NVIC_EnableIRQ(TIM3_IRQn);
+  HAL_NVIC_EnableIRQ(TIM4_IRQn);
+  HAL_NVIC_EnableIRQ(TIM6_DAC_IRQn);
+  HAL_NVIC_EnableIRQ(TIM7_IRQn);
+  HAL_NVIC_EnableIRQ(DMA1_Stream0_IRQn);
+  HAL_NVIC_EnableIRQ(DMA2_Stream1_IRQn);
+  HAL_NVIC_EnableIRQ(ADC_IRQn);
+  HAL_NVIC_EnableIRQ(EXTI9_5_IRQn);
+  HAL_NVIC_EnableIRQ(USART6_IRQn);
+
+  HAL_NVIC_SetPriorityGrouping(NVIC_PRIORITYGROUP_2); // 2 bits for pre-emption priority, 2 bits for subpriority
+
+  HAL_NVIC_SetPriority(TIM1_UP_TIM10_IRQn, 0, 1);     // Higher priority for encoder time stamping
+  HAL_NVIC_SetPriority(TIM3_IRQn, 0, 1);              // Higher priority for encoder data reading
+  HAL_NVIC_SetPriority(TIM4_IRQn, 0, 1);              // Higher priority for encoder data reading    
+  HAL_NVIC_SetPriority(TIM6_DAC_IRQn, 2, 1);          // Low priority for periodic tasks
+  HAL_NVIC_SetPriority(TIM7_IRQn, 1, 0);              // High priority for system control
+  HAL_NVIC_SetPriority(DMA1_Stream0_IRQn, 1, 1);      // High priority for I2C (IMU) RX complete
+  HAL_NVIC_SetPriority(DMA2_Stream1_IRQn, 2, 0);      // Low priority for UART (joystick) RX complete
+  HAL_NVIC_SetPriority(ADC_IRQn, 3, 0);               // Lower priority for ADC (Power module) RX complete
+  HAL_NVIC_SetPriority(EXTI9_5_IRQn, 0, 0);           // Higher priority for control button press
+  HAL_NVIC_SetPriority(USART6_IRQn, 2, 0);            // Low priority for UART (joystick) RX and TX
 
   /* USER CODE END 2 */
 
