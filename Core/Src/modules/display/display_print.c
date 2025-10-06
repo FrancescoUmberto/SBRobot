@@ -21,18 +21,31 @@
 //    }
 //}
 
-void MAX72_Print_String(const char *str, uint8_t settings)
+void MAX72_PrintString(const char *str, uint8_t settings)
 {
+    /**
+     * @brief Display a string on the MAX7219 modules.
+     * 
+     * This function displays a string on the MAX7219 modules according to the specified settings.
+     * 
+     * @param str: the string to display (max 8 characters)
+     * @param settings: display settings (NO_SETTINGS, MINIDIGITS, FLOAT)
+     * 
+     * @note Settings can be:
+     *  NO_SETTINGS: display as is (up to 4 chars)
+     *  MINIDIGITS: display as a number with up to 7 digits, right-aligned (e.g. "  123.45")
+     *  FLOAT: display as a float with decimal point (e.g. "12.34", "-0.5", "0.123")
+     */
     uint8_t len = strlen(str);
 
     if (settings == MINIDIGITS) {
     	char padded[8] = {0};
-    	        // Calcola padding all'inizio (right align)
+    	        // Initial padding
     	        uint8_t start = (len < 8) ? (8 - len) : 0;
-    	        // Spazi iniziali
+    	        // Initial spaces
     	        for (uint8_t i = 0; i < start; i++)
     	            padded[i] = ' ';
-    	        // Copia la stringa
+    	        // Copy the string
     	        for (uint8_t i = 0; i < 8 && i < len; i++)
     	            padded[start + i] = str[i];
 
@@ -113,17 +126,21 @@ void MAX72_Print_String(const char *str, uint8_t settings)
 }
 
 
-void MAX72_Print_Int(int num, uint8_t minidigits)
+void MAX72_PrintInt(int num, uint8_t minidigits)
 {
+    /**
+     * @brief Print an integer on the MAX72 display.
+     * 
+     * @param num The integer to print.
+     * @param minidigits If true, use minidigits mode.
+     */
     char sign = num < 0 ? '-' : '\0';
     unsigned u = (num < 0) ? (unsigned) (-num) : (unsigned) num;
 
     char str[9]; // 8 digits + null terminator
     if (minidigits) {
-        // segno + 7 cifre (tot 8): taglia alle ultime 7
         u %= sign=='-'?10000000u:100000000u;
     } else {
-        // segno + 3 cifre (tot 4): taglia alle ultime 3
         u %= sign=='-'?1000u:10000u;
     }
 
@@ -134,24 +151,31 @@ void MAX72_Print_Int(int num, uint8_t minidigits)
     }
 
 
-    MAX72_Print_String(str, minidigits ? MINIDIGITS : NO_SETTINGS);
+    MAX72_PrintString(str, minidigits ? MINIDIGITS : NO_SETTINGS);
 //    MAX72_Print_String(str);
 }
 
-void MAX72_Print_Float(float num, uint8_t decimals, uint8_t minidigits) {
+void MAX72_PrintFloat(float num, uint8_t decimals, uint8_t minidigits) {
+    /**
+     * @brief Print a float on the MAX72 display.
+     * 
+     * @param num The float to print.
+     * @param decimals The number of decimal places to display.
+     * @param minidigits If true, use minidigits mode.
+     */
     uint8_t max_chars = 8;
     char str[max_chars + 1]; // +1 for null terminator
 
-    // Gestione del segno
+    // Handle sign
     char sign = (num < 0) ? '-' : '\0';
     float abs_num = (num < 0) ? -num : num;
 
-    // Separa parte intera e decimale
+    // Separate integer and fractional parts
     unsigned int_part = (unsigned) abs_num;
     float frac_part = abs_num - int_part;
 
 
-    // Calcola quanti caratteri servono per la parte intera
+    // Calculate how many characters are needed for the integer part
     uint8_t int_digits = (int_part == 0) ? 0 : 1;
     unsigned temp = int_part;
     while (temp >= 10) {
@@ -159,13 +183,13 @@ void MAX72_Print_Float(float num, uint8_t decimals, uint8_t minidigits) {
         int_digits++;
     }
 
-    // Calcola spazio disponibile per decimali
-    uint8_t available_for_decimals = max_chars - (sign != '\0' ? 1 : 0) - int_digits - 1; // -1 per il punto decimale
+    // Calculate available space for decimals
+    uint8_t available_for_decimals = max_chars - (sign != '\0' ? 1 : 0) - int_digits - 1; // -1 for the decimal point
 
-    // Limita i decimali al minimo tra quelli richiesti e quelli disponibili
+    // Limit decimals to the minimum between requested and available
     uint8_t actual_decimals = (decimals < available_for_decimals) ? decimals : available_for_decimals;
 
-    // Se non c'è spazio nemmeno per un decimale, mostra solo la parte intera
+    // If there is no space for even one decimal, show only the integer part
     if (available_for_decimals == 0) {
         if (int_part == 0) {
             snprintf(str, sizeof(str), "0");
@@ -177,31 +201,31 @@ void MAX72_Print_Float(float num, uint8_t decimals, uint8_t minidigits) {
             }
         }
     } else {
-        // Calcola il moltiplicatore per i decimali
+        // Calculate the multiplier for the decimals
         unsigned multiplier = 1;
         for (uint8_t i = 0; i < actual_decimals; i++) {
             multiplier *= 10;
         }
 
-        // Arrotonda la parte frazionaria
+        // Round the fractional part
         unsigned frac_digits = (unsigned) (frac_part * multiplier + 0.5f);
 
-        // Gestisce il caso di overflow nell'arrotondamento
+        // Handle overflow in rounding
         if (frac_digits >= multiplier) {
             int_part++;
             frac_digits = 0;
         }
 
-        // Costruisce la stringa
+        // Build the string
         if (int_part == 0) {
-            // Omette la parte intera se è 0
+            // Omit the integer part if it is 0
             if (sign != '\0') {
                 snprintf(str, sizeof(str), "%c.%0*u", sign, actual_decimals, frac_digits);
             } else {
                 snprintf(str, sizeof(str), ".%0*u", actual_decimals, frac_digits);
             }
         } else {
-            // Include la parte intera
+            // Include the integer part
             if (sign != '\0') {
                 snprintf(str, sizeof(str), "%c%u.%0*u", sign, int_part, actual_decimals, frac_digits);
             } else {
@@ -210,6 +234,6 @@ void MAX72_Print_Float(float num, uint8_t decimals, uint8_t minidigits) {
         }
     }
 
-    MAX72_Print_String(str, minidigits ? MINIDIGITS : FLOAT);
+    MAX72_PrintString(str, minidigits ? MINIDIGITS : FLOAT);
 //    MAX72_Print_String(str);
 }

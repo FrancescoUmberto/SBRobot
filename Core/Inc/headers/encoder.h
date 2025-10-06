@@ -1,7 +1,7 @@
 #include "tim.h"
-#include "arm_math.h" // CMSIS DSP Library
+#include "arm_math.h" 		// CMSIS DSP Library
 
-#define RCF 0.00076699 // Radians Conversion Factor	2*pi/PPR		PPR=CPR*RES		2048*4=8192
+#define RCF 0.00076699 		// Radians Conversion Factor	2*pi/PPR		PPR=CPR*RES		2048*4=8192
 #define WHEEL_RADIUS 0.0625 // meters
 
 #define N_SAMPLES 6

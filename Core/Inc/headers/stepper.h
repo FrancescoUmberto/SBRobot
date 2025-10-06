@@ -1,10 +1,10 @@
 #include "tim.h"
 #include "encoder.h"
 
-#define ANGLE_STEP 0.000981748	// MOTOR_STEP / MICRO_STEP		MOTOR_STEP = 1.8°	MICRO_STEP = 32
+#define ANGLE_STEP 0.000981748		// MOTOR_STEP / MICRO_STEP		MOTOR_STEP = 1.8°	MICRO_STEP = 32
 #define MAX_CTRL_FREQUENCY 9000.0f	// Maximum control frequency in Hz
-#define AEP 30 // Actual Error Proportional gain
-#define LEP 205 // Last Error Proportional gain
+#define AEP 30 						// Actual Error Proportional gain
+#define LEP 205 					// Last Error Proportional gain
 // M2_PUL PA1
 // M2_DIR PB0
 

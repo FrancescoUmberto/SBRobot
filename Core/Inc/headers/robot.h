@@ -10,11 +10,11 @@
 #define I2C_SDA_GPIO_Port GPIOB
 #define I2C_SDA_Pin GPIO_PIN_9
 
-#define TILT_ANGLE_LIMIT 30.0f // degrees
+#define TILT_ANGLE_LIMIT 30.0f 			// degrees
 
-#define WHEEL_AXIS_MIDPOINT 132.5 // mm
+#define WHEEL_AXIS_MIDPOINT 132.5 		// mm
 
-#define FLASH_START_ADDR   0x08060000  // Start address of the flash sector to store base angle
+#define FLASH_START_ADDR   0x08060000  	// Start address of the flash sector to store base angle
 
 typedef struct {
 	float Kp, Ki, Kd;
