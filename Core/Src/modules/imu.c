@@ -90,7 +90,7 @@ void IMU_Compute_Data(imu_t *imu) {
 	uint32_t delta_time = HAL_GetTick() - imu->last_computation_time; // Calculate time since last angle update
 
 	imu->ax = (1-IMU_EMA_ALPHA) * imu->ax + IMU_EMA_ALPHA * (((int16_t)(imu->pData[0] << 8) | imu->pData[1]) - 280.591f) / 16384.0f * 9.81f;
-	imu->ay = (1-IMU_EMA_ALPHA) * imu->ay + IMU_EMA_ALPHA * ((int16_t)(imu->pData[2] << 8) | imu->pData[3]) / 16384.0f * 9.81f;
+	// imu->ay = (1-IMU_EMA_ALPHA) * imu->ay + IMU_EMA_ALPHA * ((int16_t)(imu->pData[2] << 8) | imu->pData[3]) / 16384.0f * 9.81f;
 	imu->az = (1-IMU_EMA_ALPHA) * imu->az + IMU_EMA_ALPHA * (((int16_t)(imu->pData[4] << 8) | imu->pData[5]) - 1117.735f) / 16384.0f * 9.81f;
 	//	if (imu->calibration_mode) {
 	//		IMU_Calibrate(imu); // Call calibration function if in calibration mode
@@ -99,14 +99,14 @@ void IMU_Compute_Data(imu_t *imu) {
 	//		imu->az = (1-IMU_EMA_ALPHA) * imu->az + IMU_EMA_ALPHA * (((int16_t)(imu->pData[4] << 8) | imu->pData[5]) - imu->az_bias)/ 16384.0f * 9.81f;
 	//	}
 	float old_wy = imu->wy;
-	imu->wx = (1-IMU_EMA_ALPHA) * imu->wx + IMU_EMA_ALPHA * ((int16_t)(imu->pData[8] << 8) | imu->pData[9]) / 131.0f;
+	// imu->wx = (1-IMU_EMA_ALPHA) * imu->wx + IMU_EMA_ALPHA * ((int16_t)(imu->pData[8] << 8) | imu->pData[9]) / 131.0f;
 	imu->wy = (1-IMU_EMA_ALPHA) * imu->wy + IMU_EMA_ALPHA * (((int16_t)(imu->pData[10] << 8) | imu->pData[11]) - 393.589f) / 131.0f;
-	imu->wz = (1-IMU_EMA_ALPHA) * imu->wz + IMU_EMA_ALPHA * ((int16_t)(imu->pData[12] << 8) | imu->pData[13]) / 131.0f;
+	// imu->wz = (1-IMU_EMA_ALPHA) * imu->wz + IMU_EMA_ALPHA * ((int16_t)(imu->pData[12] << 8) | imu->pData[13]) / 131.0f;
 
 	imu->last_computation_time = HAL_GetTick(); // Update last computation time
 
-	imu->vx = imu->vx + imu->ax * (float)delta_time / 1000.0f; 			// Update velocity based on accelerometer data
-	imu->alpha_y = (imu->wy - old_wy) / ((float)delta_time / 1000.0f); 	// Calculate angular acceleration around y-axis
+	// imu->vx = imu->vx + imu->ax * (float)delta_time / 1000.0f; 			// Update velocity based on accelerometer data
+	// imu->alpha_y = (imu->wy - old_wy) / ((float)delta_time / 1000.0f); 	// Calculate angular acceleration around y-axis
 
 	if(imu->calibration_mode) {
 		imu->angle = -atan2f(imu->ax, imu->az) * 180.0f / M_PI; 		// Use accelerometer data to compute angle in calibration mode
