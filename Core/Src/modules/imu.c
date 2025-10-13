@@ -5,24 +5,24 @@
 // #define IMU_EMA_ALPHA 0.08695652174		// Alpha = 2 / (1 + 22)	EMA Filter coefficient for 22 samples window
 #define IMU_EMA_ALPHA 0.1538461538f 		// Alpha = 2 / (1 + 12)	EMA Filter coefficient for 12 samples window
 
-static void IMU_Calibrate(imu_t *imu) {
-	imu->az = imu->az * (1-IMU_EMA_ALPHA) + ((int16_t)(imu->pData[4] << 8) | imu->pData[5]) * IMU_EMA_ALPHA;
-
-	if (imu->az > imu->az_bias){
-		imu->az_bias = imu->az_bias * (1-IMU_EMA_ALPHA) + imu->az * IMU_EMA_ALPHA; // Update az bias with EMA filter
-		imu->angle = 0.0f; 										// Reset angle to 0 during calibration
-	}
-	float delta_az = imu->az_bias - imu->az; 					// Calculate the change in az value
-
-	if(imu->calibration_mode == 1 && delta_az > 500){ 			// Pitch forward calibration step completed
-		imu->calibration_mode++;
-		imu->az_bias = imu->az; 								// Set az bias to the current az value
-	} else if(imu->calibration_mode == 2 && delta_az > 300){ 	// Pitch backward calibration step completed (rising again)
-		imu->calibration_mode = 0; 								// Reset calibration mode
-		imu->az_bias = imu->az_bias - 16384.0f; 				// Adjust az bias to remove the offset
-		imu->az= (imu->az - imu->az_bias) / 16384.0f * 9.81f; 	// Remove the bias from the az value
-	}
-}
+//static void IMU_Calibrate(imu_t *imu) {
+//	imu->az = imu->az * (1-IMU_EMA_ALPHA) + ((int16_t)(imu->pData[4] << 8) | imu->pData[5]) * IMU_EMA_ALPHA;
+//
+//	if (imu->az > imu->az_bias){
+//		imu->az_bias = imu->az_bias * (1-IMU_EMA_ALPHA) + imu->az * IMU_EMA_ALPHA; // Update az bias with EMA filter
+//		imu->angle = 0.0f; 										// Reset angle to 0 during calibration
+//	}
+//	float delta_az = imu->az_bias - imu->az; 					// Calculate the change in az value
+//
+//	if(imu->calibration_mode == 1 && delta_az > 500){ 			// Pitch forward calibration step completed
+//		imu->calibration_mode++;
+//		imu->az_bias = imu->az; 								// Set az bias to the current az value
+//	} else if(imu->calibration_mode == 2 && delta_az > 300){ 	// Pitch backward calibration step completed (rising again)
+//		imu->calibration_mode = 0; 								// Reset calibration mode
+//		imu->az_bias = imu->az_bias - 16384.0f; 				// Adjust az bias to remove the offset
+//		imu->az= (imu->az - imu->az_bias) / 16384.0f * 9.81f; 	// Remove the bias from the az value
+//	}
+//}
 
 uint8_t IMU_Init(imu_t *imu, I2C_HandleTypeDef *hi2c, uint16_t address)
 {
@@ -48,8 +48,8 @@ uint8_t IMU_Init(imu_t *imu, I2C_HandleTypeDef *hi2c, uint16_t address)
 	imu->angle = 0.0f;
 	imu->last_computation_time = 0;
 	
-	imu->az_bias = 0.0f; 		// Initialize az bias to 0
-	imu->calibration_mode = 1; 	// Calibration mode enabled by default
+//	imu->az_bias = 0.0f; 		// Initialize az bias to 0
+//	imu->calibration_mode = 1; 	// Calibration mode enabled by default
 	//	imu->ay = 0.0f;
 	//	imu->vx = 0.0f;
 
@@ -81,7 +81,7 @@ void IMU_ReadData(imu_t *imu)
 	HAL_I2C_Mem_Read_DMA(imu->hi2c, imu->address, IMU_BASE_ACCEL_ADDR, I2C_MEMADD_SIZE_8BIT, (uint8_t *)imu->pData, IMU_BUFFER_SIZE);
 }
 
-void IMU_Compute_Data(imu_t *imu) {
+void IMU_ComputeData(imu_t *imu) {
 	/**
 	 * @brief Compute the IMU data (acceleration, angular velocity, angle) using a complementary filter
 	 * 
@@ -108,10 +108,10 @@ void IMU_Compute_Data(imu_t *imu) {
 	// imu->vx = imu->vx + imu->ax * (float)delta_time / 1000.0f; 			// Update velocity based on accelerometer data
 	// imu->alpha_y = (imu->wy - old_wy) / ((float)delta_time / 1000.0f); 	// Calculate angular acceleration around y-axis
 
-	if(imu->calibration_mode) {
-		imu->angle = -atan2f(imu->ax, imu->az) * 180.0f / M_PI; 		// Use accelerometer data to compute angle in calibration mode
-		imu->calibration_mode = 0; 										// Reset calibration mode after computing angle
-	}else {
-		imu->angle = .996f * (imu->angle + imu->wy * (float)delta_time/1000.0f) - .004f * atan2f(imu->ax, imu->az) * 180.0f / M_PI; // Complementary filter to combine gyroscope and accelerometer data
-	}
+//	if(imu->calibration_mode) {
+//		imu->angle = -atan2f(imu->ax, imu->az) * 180.0f / M_PI; 		// Use accelerometer data to compute angle in calibration mode
+//		imu->calibration_mode = 0; 										// Reset calibration mode after computing angle
+//	}else {
+//	}
+	imu->angle = .996f * (imu->angle + imu->wy * (float)delta_time/1000.0f) - .004f * atan2f(imu->ax, imu->az) * 180.0f / M_PI; // Complementary filter to combine gyroscope and accelerometer data
 }

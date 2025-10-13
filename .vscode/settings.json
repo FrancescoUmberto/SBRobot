@@ -5,6 +5,7 @@
         "button.h": "c",
         "stdlib.h": "c",
         "string.h": "c",
-        "_string.h": "c"
+        "_string.h": "c",
+        "tim.h": "c"
     }
 }

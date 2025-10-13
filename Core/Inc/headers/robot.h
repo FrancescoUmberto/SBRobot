@@ -16,23 +16,19 @@
 
 #define FLASH_START_ADDR   0x08060000  	// Start address of the flash sector to store base angle
 
+extern float errorToPrint;
+
 typedef struct {
 	float Kp, Ki, Kd;
 	float base_angle_sp;
 	float integral_error, last_error;
-
 	float js_speed_sp, js_speed;
-
 	float js_multiplier, js_multiplier_sp;
-
 	float Kp_speed, Kd_speed;
 	float speed_sp;
 	float last_speed_err;
-
 	float max_angle_offset, angle_sp, max_speed;
-
 	uint8_t active;
-
 	uint8_t base_angle_config;
 } controller_t;
 

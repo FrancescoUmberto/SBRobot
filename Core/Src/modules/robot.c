@@ -18,6 +18,8 @@ controller_t controller;
 
 float alpha = 0.05f;
 float js_x = 0.0f, js_y = 0.0f;
+float errorToPrint = 0.0f;
+
 
 static void I2C1_BusRecovery(void)
 {
@@ -86,11 +88,11 @@ void Robot_Init(robot_t *robot)
     HAL_TIM_Base_Start(&htim8);                         // Virtual overflow timer
     HAL_TIM_Base_Start(&htim1);                         // Microsecond timer
 
-    MAX72_init(&display);
+    MAX72_Init(&display);
 
     while (!IMU_Init(&imu, &hi2c1, MPU_6050_ADDR))
     {
-        MAX72_Print_String("I2C", NO_SETTINGS);
+        MAX72_PrintString("I2C", NO_SETTINGS);
         I2C1_BusRecovery();                             // Attempt to recover I2C bus if IMU init fails
     }
     MAX72_Clear();
@@ -200,17 +202,17 @@ void Controller_ReadSerialMsg(controller_t *controller, char *msg)
 
         if (base_angle_config)
         {
-            MAX72_Add_Data(&display, &base_angle_data);
-            MAX72_Stop_Changing_Data(&display, 0);  // Stop changing data to always show base angle
+            MAX72_AddData(&display, &base_angle_data);
+            MAX72_StopChangingData(&display, 0);  // Stop changing data to always show base angle
             while (display.data[display.current_index].data != &controller->base_angle_sp)
             {
-                MAX72_Change_Data(&display, 1);     // Force change to base angle display
+                MAX72_ChangeData(&display, 1);     // Force change to base angle display
             }
         }
         else
         {
-            MAX72_Remove_Data(&display, &base_angle_data);
-            MAX72_Resume_Changing_Data(&display, 1); // Resume changing data
+            MAX72_RemoveData(&display, &base_angle_data);
+            MAX72_ResumeChangingData(&display, 1); // Resume changing data
         }
     }
 
@@ -369,6 +371,7 @@ static void Controller_SetpointAngle(controller_t *controller)
      * @param controller Pointer to the controller_t structure
      */
     float error = controller->angle_sp - imu.angle;
+    errorToPrint = error;
 
     if (fabs(error) > TILT_ANGLE_LIMIT) {
         Stepper_SetSpeed(&stepper_l, 0.0f);

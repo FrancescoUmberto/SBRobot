@@ -55,13 +55,13 @@ void PowerModule_UpdateData(power_module_t *power_module){
 	if (power_module->voltage < WARNING_LIMIT) { 			// If voltage is below warning limit
 		if (power_module->voltage < STOP_LIMIT) { 			// If voltage is below stop limit
 			if (power_module->alert_issued < 2) { 			// If stop alert has not been issued
-				MAX72_Stop_Changing_Data(&display, 1); 		// Stop automatic data change
-				MAX72_Scroll_Start_IT("Critical Voltage!"); // Start scrolling stop message
+				MAX72_StopChangingData(&display, 1); 		// Stop automatic data change
+				MAX72_ScrollStart_IT("Critical Voltage!"); // Start scrolling stop message
 				power_module->alert_issued = 2; 			// Set stop alert flag
 			}
 		} else if (!power_module->alert_issued) { 			// If warning alert has not been issued
-			MAX72_Stop_Changing_Data(&display, 1); 			// Stop automatic data change
-			MAX72_Scroll_Start_IT("Low Voltage!"); 			// Start scrolling warning message
+			MAX72_StopChangingData(&display, 1); 			// Stop automatic data change
+			MAX72_ScrollStart_IT("Low Voltage!"); 			// Start scrolling warning message
 			power_module->alert_issued = 1; 				// Set warning alert flag
 		}
 

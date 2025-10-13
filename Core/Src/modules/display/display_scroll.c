@@ -100,7 +100,7 @@ void MAX72_Scroll(const char *text, uint16_t delay_ms) {
 
 scroll_state_t scroll_state = {0};
 
-void MAX72_Scroll_Start_IT(const char *text) {
+void MAX72_ScrollStart_IT(const char *text) {
     /**
      * @brief Initialize scrolling text with interrupts (non-blocking)
      *
@@ -129,11 +129,11 @@ void MAX72_Scroll_Start_IT(const char *text) {
     uint8_t temp = len * GLYPH_WIDTH + (len - 1) * CHAR_SPACING;
     uint8_t max_chars = ((DEV_NUM * 8 < temp) ? DEV_NUM*8 : temp) - 8; // Initial padding of 8 columns
     for (uint8_t i = 0; i < max_chars; i++) {
-		MAX72_Scroll_Process(); // Process the first character to initialize the frame
+		MAX72_ScrollProcess(); // Process the first character to initialize the frame
 	}
 }
 
-void MAX72_Scroll_Stop(void) {
+void MAX72_ScrollStop(void) {
     /**
      * @brief Stop scrolling text
      * 
@@ -141,7 +141,7 @@ void MAX72_Scroll_Stop(void) {
     scroll_state.enabled = 0;
 }
 
-void MAX72_Scroll_Resume(void) {
+void MAX72_ScrollResume(void) {
     /**
      * @brief Resume scrolling text
      * 
@@ -149,7 +149,7 @@ void MAX72_Scroll_Resume(void) {
     scroll_state.enabled = 1;
 }
 
-void MAX72_Scroll_Process(void) {
+void MAX72_ScrollProcess(void) {
     /**
      * @brief Process one step of scrolling text (to be called in main loop)
      * 

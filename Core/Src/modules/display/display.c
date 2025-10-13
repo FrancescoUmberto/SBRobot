@@ -129,7 +129,7 @@ static const uint8_t InitCommands[5][2] = {
     {0x0F, 0x00}  // Display Test: off
 };
 
-void MAX72_init(display_t *display)
+void MAX72_Init(display_t *display)
 {
     /**
      * @brief Initialize the MAX72xx display
@@ -198,7 +198,7 @@ void MAX72_Clear(void)
 	    }
 }
 
-void MAX72_Add_Data(display_t *display, display_data_t *data) {
+void MAX72_AddData(display_t *display, display_data_t *data) {
     /**
      * @brief Add data to the display
      * 
@@ -297,7 +297,7 @@ void MAX72_UpdateData(display_t *display) {
 					MAX72_PrintInt(*(int64_t *)current_data->data, current_data->string_settings);
 					break;
 				case DISPLAY_TYPE_FLOAT:
-					MAX72_PrintFloat((int)*(float *)current_data->data, current_data->string_settings);
+					MAX72_PrintFloat((int)*(float *)current_data->data, current_data->float_decimals, current_data->string_settings);
 					break;
 			}
 			break;
@@ -350,9 +350,9 @@ void MAX72_ChangeData(display_t *display, uint8_t force_change) {
 
 	if (display->data[display->current_index].settings == PRINT_SCROLL) {
 		if(!scroll_state.enabled || display->data_count > 1){
-		MAX72_Scroll_Start_IT((const char *)display->data[display->current_index].data);}
+		MAX72_ScrollStart_IT((const char *)display->data[display->current_index].data);}
 	} else if (scroll_state.enabled) {
-		MAX72_Scroll_Stop();
+		MAX72_ScrollStop();
 	}
 
 	MAX72_UpdateData(display); // Update the displayed data

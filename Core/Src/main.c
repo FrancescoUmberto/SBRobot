@@ -59,7 +59,7 @@ static uint8_t ADC_Rx_Cplt = 0; // Flag to indicate that ADC data has been recei
 
 static char js_buffer[15]; // Buffer to store joystick message (14 chars + null terminator)
 static uint8_t js_msg_ready = 0; // Flag to indicate that a complete joystick message is ready
-
+uint8_t printerror = 0;
 robot_t robot;
 
 /* USER CODE END PV */
@@ -209,7 +209,7 @@ int main(void)
 //  MAX72_Add_Data(&display, &data2);
 
   display_data_t data3 = {&imu.angle, PRINT_FLOAT, FLOAT, DISPLAY_TYPE_FLOAT, 2};
-  MAX72_Add_Data(&display, &data3);
+  MAX72_AddData(&display, &data3);
 
 //  display_data_t data4 = {&power_module.voltage, PRINT_FLOAT, NO_SETTINGS, DISPLAY_TYPE_FLOAT, 2};
 //  MAX72_Add_Data(&display, &data4);
@@ -221,11 +221,15 @@ int main(void)
     /* USER CODE END WHILE */
 
     /* USER CODE BEGIN 3 */
-
 	  if (IMU_Rx_Cplt) {
 		  IMU_Rx_Cplt = 0; // Reset flag
 		  IMU_ComputeData(&imu); // Process received data
 	  }
+
+	  if (printerror == 1) {
+		  printerror = 0;
+	  }
+
 
     if (ADC_Rx_Cplt) {
       ADC_Rx_Cplt = 0; // Reset flag
@@ -262,7 +266,7 @@ int main(void)
 	      //TODO Activate
 //	      PowerModule_ReadData(&power_module);
 
-	      MAX72_Update_Data(&display);
+	      MAX72_UpdateData(&display);
 	      if (tim6_update_cnt % 5 == 0) { // Update every 500ms
 	    	  // Display refresh data
 
@@ -272,11 +276,11 @@ int main(void)
 //			  show_calibration_messages();
 
 	    	  if (tim6_update_cnt % 10 == 0) { // Every 1 second
-	    		  MAX72_Change_Data(&display,0);
+	    		  MAX72_ChangeData(&display,0);
 	    	  }
 	      }
 
-	      MAX72_Scroll_Process(); // Process scrolling text
+	      MAX72_ScrollProcess(); // Process scrolling text
 	  }
   }
   /* USER CODE END 3 */
@@ -339,6 +343,7 @@ void HAL_TIM_PeriodElapsedCallback(TIM_HandleTypeDef *htim){
 	} else if (htim->Instance == TIM7) {
 		if (controller.active){
 		  Controller_Update(&controller);
+		  printerror = 1;
 		}
 		Stepper_SpeedControl(&stepper_r);
 		Stepper_SpeedControl(&stepper_l);

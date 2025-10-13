@@ -101,8 +101,8 @@ extern scroll_state_t scroll_state;
 void MAX72_Scroll(const char *text, uint16_t delay_ms);
 
 // With interrupt
-void MAX72_Scroll_Start_IT(const char *text);
-void MAX72_Scroll_Process(void);
-void MAX72_Scroll_Resume(void);
-void MAX72_Scroll_Stop(void);
+void MAX72_ScrollStart_IT(const char *text);
+void MAX72_ScrollProcess(void);
+void MAX72_ScrollResume(void);
+void MAX72_ScrollStop(void);
 #endif /* MAX7219_H_ */
